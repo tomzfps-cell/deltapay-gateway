@@ -1,162 +1,177 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/i18n';
+import { Copy, Check, Clock, CheckCircle2, XCircle, Loader2, ArrowRight, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Copy, Check, Clock, CheckCircle, XCircle, Loader2, QrCode } from 'lucide-react';
-import { formatCurrency } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+
+type PaymentStatus = 'pending' | 'confirmed' | 'expired' | 'created' | 'failed';
 
 interface PaymentData {
   id: string;
-  status: string;
-  payment_reference: string;
-  amount_local: number;
-  currency: 'ARS' | 'BRL' | 'USD';
+  status: PaymentStatus;
   expires_at: string;
-  customer_name: string | null;
-  customer_email: string | null;
-  snapshot_redirect_url: string | null;
-  merchant: {
-    business_name: string;
-    bank_alias: string | null;
-    bank_cbu: string | null;
-    bank_instructions: string | null;
+  payment_reference: string;
+  amount: number;
+  currency: string;
+  redirect_url: string | null;
+  confirmed_at: string | null;
+  pool_account: {
+    alias: string | null;
+    cbu: string | null;
+    cvu: string | null;
+    holder: string | null;
+    bank: string | null;
   };
   product: {
-    name: string;
+    name: string | null;
     description: string | null;
-  } | null;
+  };
+  merchant: {
+    name: string | null;
+  };
+  customer: {
+    email: string | null;
+    name: string | null;
+  };
+}
+
+interface CustomerForm {
+  email: string;
+  name: string;
+  phone: string;
 }
 
 export const Checkout: React.FC = () => {
-  const { productSlug, paymentId } = useParams();
+  const { productSlug, paymentId } = useParams<{ productSlug?: string; paymentId?: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [payment, setPayment] = useState<PaymentData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
-  // Customer form (only for new payments)
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  // Customer form (solo para /p/:slug)
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [customerForm, setCustomerForm] = useState<CustomerForm>({
+    email: '',
+    name: '',
+    phone: '',
+  });
 
-  // Fetch or create payment
-  useEffect(() => {
-    const loadPayment = async () => {
-      setIsLoading(true);
-      setError(null);
+  // Crear payment desde slug usando RPC
+  const createPaymentFromSlug = useCallback(async (slug: string, customer?: CustomerForm) => {
+    setCreating(true);
+    try {
+      const { data, error: rpcError } = await supabase.rpc('create_payment_from_product_slug', {
+        _product_slug: slug,
+        _customer_email: customer?.email || null,
+        _customer_name: customer?.name || null,
+        _customer_phone: customer?.phone || null,
+      });
 
-      try {
-        if (paymentId) {
-          // Load existing payment
-          const { data, error: fetchError } = await supabase
-            .from('payments')
-            .select(`
-              id, status, payment_reference, amount_local, currency, expires_at,
-              customer_name, customer_email, snapshot_redirect_url,
-              merchant:merchant_id (business_name, bank_alias, bank_cbu, bank_instructions),
-              product:product_id (name, description)
-            `)
-            .eq('id', paymentId)
-            .single();
+      if (rpcError) throw rpcError;
 
-          if (fetchError) throw fetchError;
-          setPayment(data as unknown as PaymentData);
-        } else if (productSlug) {
-          // Find product by slug
-          const { data: product, error: productError } = await supabase
-            .from('products')
-            .select(`
-              id, name, description, price, currency, redirect_url, is_active,
-              merchant:merchant_id (id, business_name, bank_alias, bank_cbu, bank_instructions, allowed_domains)
-            `)
-            .eq('slug', productSlug)
-            .eq('is_active', true)
-            .single();
+      const result = data as { success: boolean; payment_id?: string; error?: string };
 
-          if (productError || !product) {
-            setError('Producto no encontrado o no disponible');
-            setIsLoading(false);
-            return;
-          }
-
-          // Store product data for form display
-          setPayment({
-            id: '',
-            status: 'new',
-            payment_reference: '',
-            amount_local: product.price,
-            currency: product.currency as 'ARS' | 'BRL' | 'USD',
-            expires_at: '',
-            customer_name: null,
-            customer_email: null,
-            snapshot_redirect_url: product.redirect_url,
-            merchant: product.merchant as PaymentData['merchant'],
-            product: { name: product.name, description: product.description },
-          });
-        }
-      } catch (err: any) {
-        console.error('Error loading payment:', err);
-        setError('Error al cargar el pago');
-      } finally {
-        setIsLoading(false);
+      if (!result.success) {
+        setError(result.error || 'No se pudo crear el pago');
+        return;
       }
-    };
 
-    loadPayment();
-  }, [productSlug, paymentId]);
+      // Redirigir al checkout del payment
+      navigate(`/pay/${result.payment_id}`, { replace: true });
+    } catch (err: any) {
+      console.error('Error creating payment:', err);
+      setError('Error al crear el pago. Intenta de nuevo.');
+    } finally {
+      setCreating(false);
+    }
+  }, [navigate]);
+
+  // Cargar payment por ID usando RPC seguro
+  const loadPayment = useCallback(async (id: string) => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_public_payment_view', {
+        _payment_id: id,
+      });
+
+      if (rpcError) throw rpcError;
+
+      const result = data as unknown as { success: boolean; payment?: PaymentData; error?: string };
+
+      if (!result.success || !result.payment) {
+        setError(result.error || 'Pago no encontrado');
+        return;
+      }
+
+      setPayment(result.payment);
+    } catch (err: any) {
+      console.error('Error loading payment:', err);
+      setError('Error al cargar el pago');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Efecto inicial
+  useEffect(() => {
+    if (paymentId) {
+      loadPayment(paymentId);
+    } else if (productSlug) {
+      setShowCustomerForm(true);
+      setLoading(false);
+    } else {
+      setError('Enlace de pago inválido');
+      setLoading(false);
+    }
+  }, [paymentId, productSlug, loadPayment]);
 
   // Countdown timer
   useEffect(() => {
     if (!payment?.expires_at || payment.status !== 'pending') return;
 
-    const updateTimer = () => {
+    const updateTimeLeft = () => {
       const now = new Date().getTime();
-      const expiry = new Date(payment.expires_at).getTime();
-      const diff = Math.max(0, Math.floor((expiry - now) / 1000));
+      const expires = new Date(payment.expires_at).getTime();
+      const diff = Math.max(0, Math.floor((expires - now) / 1000));
       setTimeLeft(diff);
 
       if (diff === 0 && payment.status === 'pending') {
-        setPayment((prev) => prev ? { ...prev, status: 'expired' } : null);
+        setPayment(prev => prev ? { ...prev, status: 'expired' } : null);
       }
     };
 
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    updateTimeLeft();
+    const interval = setInterval(updateTimeLeft, 1000);
     return () => clearInterval(interval);
   }, [payment?.expires_at, payment?.status]);
 
-  // Real-time status updates
+  // Realtime subscription para cambios de estado
   useEffect(() => {
-    if (!payment?.id || payment.status !== 'pending') return;
+    if (!paymentId) return;
 
     const channel = supabase
-      .channel(`payment-${payment.id}`)
+      .channel(`payment-${paymentId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'payments',
-          filter: `id=eq.${payment.id}`,
+          filter: `id=eq.${paymentId}`,
         },
         (payload) => {
-          const newStatus = (payload.new as any).status;
-          setPayment((prev) => prev ? { ...prev, status: newStatus } : null);
-
-          if (newStatus === 'confirmed' && payment.snapshot_redirect_url) {
-            // Redirect after 3 seconds
-            setTimeout(() => {
-              window.location.href = payment.snapshot_redirect_url!;
-            }, 3000);
-          }
+          const newStatus = payload.new.status as PaymentStatus;
+          setPayment(prev => prev ? { ...prev, status: newStatus, confirmed_at: payload.new.confirmed_at } : null);
         }
       )
       .subscribe();
@@ -164,393 +179,420 @@ export const Checkout: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [payment?.id, payment?.status, payment?.snapshot_redirect_url]);
+  }, [paymentId]);
 
-  const createPayment = async () => {
-    if (!productSlug) return;
+  // Redirect automático cuando se confirma
+  useEffect(() => {
+    if (payment?.status !== 'confirmed' || !payment.redirect_url || redirecting) return;
 
-    setIsCreating(true);
+    const handleRedirect = async () => {
+      setRedirecting(true);
 
-    try {
-      // Find product again to get fresh data
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .select('id, price, currency, redirect_url, merchant_id')
-        .eq('slug', productSlug)
-        .eq('is_active', true)
-        .single();
+      // Obtener URL firmada con HMAC
+      try {
+        const { data, error } = await supabase.rpc('generate_payment_redirect_signature', {
+          _payment_id: payment.id,
+        });
 
-      if (productError || !product) {
-        throw new Error('Producto no disponible');
+        if (error) throw error;
+
+        const result = data as { success: boolean; redirect_url?: string };
+
+        if (result.success && result.redirect_url) {
+          // Esperar 3 segundos para mostrar confirmación
+          setTimeout(() => {
+            window.location.href = result.redirect_url!;
+          }, 3000);
+        }
+      } catch (err) {
+        console.error('Error getting redirect URL:', err);
       }
+    };
 
-      // Create payment
-      const { data: newPayment, error: createError } = await supabase
-        .from('payments')
-        .insert({
-          merchant_id: product.merchant_id,
-          product_id: product.id,
-          amount_local: product.price,
-          currency: product.currency,
-          customer_name: customerName || null,
-          customer_email: customerEmail || null,
-          snapshot_price: product.price,
-          snapshot_currency: product.currency,
-          snapshot_redirect_url: product.redirect_url,
-          status: 'pending',
-        })
-        .select('id')
-        .single();
+    handleRedirect();
+  }, [payment?.status, payment?.redirect_url, payment?.id, redirecting]);
 
-      if (createError) throw createError;
-
-      // Redirect to payment page
-      navigate(`/pay/${newPayment.id}`, { replace: true });
-    } catch (err: any) {
-      console.error('Error creating payment:', err);
-      toast({
-        title: 'Error',
-        description: err.message || 'No se pudo crear el pago',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreating(false);
+  // Copy to clipboard
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+      toast({ title: 'Copiado al portapapeles' });
+    } catch {
+      toast({ title: 'Error al copiar', variant: 'destructive' });
     }
   };
 
-  const copyToClipboard = useCallback((text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  }, []);
-
+  // Format time
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (isLoading) {
+  // Handle customer form submit
+  const handleCreatePayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (productSlug) {
+      createPaymentFromSlug(productSlug, customerForm);
+    }
+  };
+
+  // Render customer form
+  if (showCustomerForm && !payment) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="glass rounded-2xl p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+                <span className="text-3xl font-bold text-primary">Δ</span>
+              </div>
+              <h1 className="text-2xl font-bold">DeltaPay</h1>
+              <p className="text-muted-foreground">Completá tus datos para continuar</p>
+            </div>
+
+            <form onSubmit={handleCreatePayment} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={customerForm.email}
+                  onChange={(e) => setCustomerForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="input-field"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre (opcional)</Label>
+                <Input
+                  id="name"
+                  placeholder="Tu nombre"
+                  value={customerForm.name}
+                  onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="input-field"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono (opcional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+54 9 11 1234-5678"
+                  value={customerForm.phone}
+                  onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                  className="input-field"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full btn-primary-glow gap-2"
+                disabled={creating}
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creando pago...
+                  </>
+                ) : (
+                  <>
+                    Continuar al pago
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Cargando pago...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
   if (error || !payment) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="text-center space-y-4">
-          <XCircle className="h-16 w-16 text-destructive mx-auto" />
-          <h1 className="text-2xl font-bold text-foreground">{error || 'Pago no encontrado'}</h1>
-          <Button onClick={() => navigate('/')} variant="outline">
-            Volver al inicio
-          </Button>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="glass rounded-2xl p-8 text-center max-w-md">
+          <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-xl font-semibold mb-2">Error</h1>
+          <p className="text-muted-foreground">{error || 'Pago no encontrado'}</p>
         </div>
       </div>
     );
   }
 
-  // New payment form (before creating)
-  if (payment.status === 'new') {
-    return (
-      <div className="min-h-screen bg-background py-8 px-4">
-        <div className="max-w-md mx-auto space-y-6">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">{payment.merchant.business_name}</h1>
-            <p className="text-muted-foreground mt-1">Checkout seguro</p>
-          </div>
-
-          {/* Product */}
-          <div className="glass rounded-xl p-6">
-            <h2 className="font-semibold text-lg">{payment.product?.name}</h2>
-            {payment.product?.description && (
-              <p className="text-sm text-muted-foreground mt-1">{payment.product.description}</p>
-            )}
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Total a pagar</span>
-                <span className="text-2xl font-bold text-gradient">
-                  {formatCurrency(payment.amount_local, payment.currency, 'es')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Form */}
-          <div className="glass rounded-xl p-6 space-y-4">
-            <h3 className="font-semibold">Tus datos (opcional)</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre</Label>
-              <Input
-                id="name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Tu nombre"
-                className="input-field"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="tu@email.com"
-                className="input-field"
-              />
-            </div>
-
-            <Button
-              onClick={createPayment}
-              disabled={isCreating}
-              className="w-full btn-primary-glow"
-            >
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Procesando...
-                </>
-              ) : (
-                'Continuar al pago'
-              )}
-            </Button>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <span className="flex h-6 w-6 items-center justify-center rounded bg-primary/20">
-                <span className="text-xs font-bold text-primary">Δ</span>
-              </span>
-              <span>Procesado por DeltaPay</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Payment status screens
-  if (payment.status === 'confirmed') {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-20 h-20 mx-auto rounded-full bg-success/20 flex items-center justify-center animate-glow">
-            <CheckCircle className="h-10 w-10 text-success" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">¡Pago Confirmado!</h1>
-            <p className="text-muted-foreground mt-2">
-              Tu pago ha sido procesado correctamente.
-            </p>
-          </div>
-          <div className="glass rounded-xl p-4">
-            <p className="text-sm text-muted-foreground">Referencia</p>
-            <p className="font-mono text-lg">{payment.payment_reference}</p>
-          </div>
-          {payment.snapshot_redirect_url ? (
-            <p className="text-sm text-muted-foreground">
-              Redirigiendo automáticamente...
-            </p>
-          ) : (
-            <Button onClick={() => window.close()} variant="outline">
-              Cerrar
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
+  // Expired state
   if (payment.status === 'expired') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-20 h-20 mx-auto rounded-full bg-destructive/20 flex items-center justify-center">
-            <XCircle className="h-10 w-10 text-destructive" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Pago Expirado</h1>
-            <p className="text-muted-foreground mt-2">
-              El tiempo para completar este pago ha vencido.
-            </p>
-          </div>
-          <Button onClick={() => navigate(-1)} variant="outline">
-            Volver a intentar
-          </Button>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="glass rounded-2xl p-8 text-center max-w-md">
+          <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-xl font-semibold mb-2">Pago expirado</h1>
+          <p className="text-muted-foreground mb-6">
+            Este enlace de pago ha expirado. Solicitá uno nuevo al vendedor.
+          </p>
+          <p className="text-sm text-muted-foreground font-mono">
+            Ref: {payment.payment_reference}
+          </p>
         </div>
       </div>
     );
   }
 
-  // Pending payment - main checkout view
+  // Confirmed state
+  if (payment.status === 'confirmed') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="glass rounded-2xl p-8 text-center max-w-md">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
+            <CheckCircle2 className="h-20 w-20 text-emerald-500 mx-auto relative" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2 text-emerald-500">¡Pago confirmado!</h1>
+          <p className="text-muted-foreground mb-6">
+            Tu pago de {formatCurrency(payment.amount, payment.currency as 'ARS' | 'BRL' | 'USD', 'es')} fue procesado correctamente.
+          </p>
+
+          {payment.redirect_url && (
+            <div className="space-y-3">
+              {redirecting ? (
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Redirigiendo...</span>
+                </div>
+              ) : (
+                <Button
+                  className="w-full btn-primary-glow gap-2"
+                  onClick={async () => {
+                    try {
+                      const { data } = await supabase.rpc('generate_payment_redirect_signature', {
+                        _payment_id: payment.id,
+                      });
+                      const result = data as { success: boolean; redirect_url?: string };
+                      if (result.success && result.redirect_url) {
+                        window.location.href = result.redirect_url;
+                      }
+                    } catch (err) {
+                      toast({ title: 'Error al redirigir', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Continuar
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-6 font-mono">
+            Ref: {payment.payment_reference}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Pending payment - Main checkout view
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
-      <div className="max-w-md mx-auto space-y-6">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-2xl mx-auto p-4 py-8 space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">{payment.merchant.business_name}</h1>
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10">
+            <Building2 className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-xl font-bold">{payment.merchant.name || 'DeltaPay'}</h1>
+        </div>
+
+        {/* Order summary */}
+        <div className="glass rounded-xl p-6 space-y-4">
+          <h2 className="font-semibold text-lg">Tu pedido</h2>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">{payment.product.name || 'Producto'}</p>
+              {payment.product.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">{payment.product.description}</p>
+              )}
+            </div>
+            <p className="stat-value text-xl">
+              {formatCurrency(payment.amount, payment.currency as 'ARS' | 'BRL' | 'USD', 'es')}
+            </p>
+          </div>
+
+          <div className="border-t border-border pt-4 flex items-center justify-between">
+            <span className="font-semibold">Total a pagar</span>
+            <span className="stat-value text-2xl">
+              {formatCurrency(payment.amount, payment.currency as 'ARS' | 'BRL' | 'USD', 'es')}
+            </span>
+          </div>
         </div>
 
         {/* Timer */}
         <div className={cn(
-          'rounded-xl p-4 flex items-center justify-between',
-          timeLeft < 120 ? 'bg-destructive/20 border border-destructive/30' : 'glass'
+          "glass rounded-xl p-4 flex items-center justify-between",
+          timeLeft < 300 && "border-amber-500/50 bg-amber-500/5"
         )}>
-          <div className="flex items-center gap-2">
-            <Clock className={cn('h-5 w-5', timeLeft < 120 ? 'text-destructive' : 'text-warning')} />
+          <div className="flex items-center gap-3">
+            <Clock className={cn("h-5 w-5", timeLeft < 300 ? "text-amber-500" : "text-muted-foreground")} />
             <span className="text-sm">Tiempo restante</span>
           </div>
           <span className={cn(
-            'font-mono text-xl font-bold',
-            timeLeft < 120 ? 'text-destructive' : 'text-foreground'
+            "font-mono text-lg font-bold",
+            timeLeft < 300 && "text-amber-500"
           )}>
             {formatTime(timeLeft)}
           </span>
         </div>
 
-        {/* Order Summary */}
-        <div className="glass rounded-xl p-6">
-          <h2 className="font-semibold mb-4">Tu pedido</h2>
-          {payment.product && (
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="font-medium">{payment.product.name}</p>
-                {payment.product.description && (
-                  <p className="text-sm text-muted-foreground">{payment.product.description}</p>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="pt-4 border-t border-border">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Total</span>
-              <span className="text-2xl font-bold text-gradient">
-                {formatCurrency(payment.amount_local, payment.currency, 'es')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Instructions */}
+        {/* Payment details - POOL ACCOUNT */}
         <div className="glass rounded-xl p-6 space-y-6">
-          <h2 className="font-semibold">Cómo pagar</h2>
-
-          {/* QR Section */}
-          <div className="flex flex-col items-center gap-4 p-4 bg-white rounded-lg">
-            <div className="w-48 h-48 bg-muted flex items-center justify-center rounded-lg">
-              <QrCode className="h-24 w-24 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Escaneá el QR con tu app bancaria
+          <div className="space-y-2">
+            <h2 className="font-semibold text-lg">Pagá con transferencia</h2>
+            <p className="text-sm text-muted-foreground">
+              Transferí el monto exacto a la cuenta de DeltaPay usando la referencia indicada.
             </p>
           </div>
 
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <span className="relative bg-card px-4 text-sm text-muted-foreground">o transferí a</span>
+          {/* Pool account details */}
+          <div className="space-y-4">
+            {payment.pool_account.alias && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Alias</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted/50 rounded-lg px-4 py-3 font-mono text-lg">
+                    {payment.pool_account.alias}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(payment.pool_account.alias!, 'alias')}
+                    className="shrink-0"
+                  >
+                    {copiedField === 'alias' ? (
+                      <Check className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {payment.pool_account.cbu && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">CBU</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted/50 rounded-lg px-4 py-3 font-mono text-sm break-all">
+                    {payment.pool_account.cbu}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(payment.pool_account.cbu!, 'cbu')}
+                    className="shrink-0"
+                  >
+                    {copiedField === 'cbu' ? (
+                      <Check className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {payment.pool_account.holder && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Titular</Label>
+                <p className="bg-muted/50 rounded-lg px-4 py-3 font-medium">
+                  {payment.pool_account.holder}
+                </p>
+              </div>
+            )}
+
+            {payment.pool_account.bank && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Banco</Label>
+                <p className="bg-muted/50 rounded-lg px-4 py-3 text-muted-foreground">
+                  {payment.pool_account.bank}
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Bank Details */}
-          <div className="space-y-4">
-            {payment.merchant.bank_alias && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase">Alias</p>
-                  <p className="font-mono font-medium">{payment.merchant.bank_alias}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(payment.merchant.bank_alias!, 'alias')}
-                  className="shrink-0"
-                >
-                  {copiedField === 'alias' ? (
-                    <Check className="h-4 w-4 text-success" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {payment.merchant.bank_cbu && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase">CBU/CVU</p>
-                  <p className="font-mono font-medium text-sm">{payment.merchant.bank_cbu}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(payment.merchant.bank_cbu!, 'cbu')}
-                  className="shrink-0"
-                >
-                  {copiedField === 'cbu' ? (
-                    <Check className="h-4 w-4 text-success" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* Reference */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase">Referencia (obligatoria)</p>
-                <p className="font-mono font-bold text-primary text-lg">{payment.payment_reference}</p>
-              </div>
+          {/* Payment reference - CRITICAL */}
+          <div className="border-t border-border pt-6 space-y-2">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+              Referencia de pago (obligatoria)
+            </Label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-primary/10 border-2 border-primary/30 rounded-lg px-4 py-4 font-mono text-xl font-bold text-center text-primary">
+                {payment.payment_reference}
+              </code>
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(payment.payment_reference, 'ref')}
-                className="shrink-0"
+                variant="outline"
+                size="icon"
+                onClick={() => copyToClipboard(payment.payment_reference, 'reference')}
+                className="shrink-0 h-14 w-14"
               >
-                {copiedField === 'ref' ? (
-                  <Check className="h-4 w-4 text-success" />
+                {copiedField === 'reference' ? (
+                  <Check className="h-5 w-5 text-emerald-500" />
                 ) : (
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-5 w-5" />
                 )}
               </Button>
             </div>
+            <p className="text-xs text-amber-500 font-medium">
+              ⚠️ Incluí esta referencia exacta en el concepto de la transferencia
+            </p>
           </div>
-
-          {/* Instructions */}
-          {payment.merchant.bank_instructions && (
-            <div className="p-4 rounded-lg bg-muted/30 text-sm text-muted-foreground">
-              {payment.merchant.bank_instructions}
-            </div>
-          )}
         </div>
 
-        {/* Status indicator */}
-        <div className="glass rounded-xl p-4 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-warning animate-pulse" />
-            <span className="text-sm text-muted-foreground">Esperando pago...</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            La página se actualizará automáticamente al confirmar
-          </p>
+        {/* Instructions */}
+        <div className="glass rounded-xl p-6 space-y-4 bg-muted/30">
+          <h3 className="font-medium">Instrucciones</h3>
+          <ol className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">1</span>
+              <span>Abrí tu app de homebanking o billetera virtual</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">2</span>
+              <span>Transferí exactamente <strong className="text-foreground">{formatCurrency(payment.amount, payment.currency as 'ARS' | 'BRL' | 'USD', 'es')}</strong> al alias indicado</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">3</span>
+              <span>Incluí la referencia <strong className="text-foreground">{payment.payment_reference}</strong> en el concepto</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">4</span>
+              <span>Esta página se actualizará automáticamente cuando confirmemos tu pago</span>
+            </li>
+          </ol>
         </div>
 
         {/* Footer */}
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <span className="flex h-6 w-6 items-center justify-center rounded bg-primary/20">
-              <span className="text-xs font-bold text-primary">Δ</span>
-            </span>
-            <span>Procesado por DeltaPay</span>
-          </div>
+        <div className="text-center text-xs text-muted-foreground space-y-2">
+          <p>Procesado por DeltaPay</p>
+          <p className="font-mono">Ref: {payment.payment_reference}</p>
         </div>
       </div>
     </div>
