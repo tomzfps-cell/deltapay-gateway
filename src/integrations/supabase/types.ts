@@ -217,8 +217,53 @@ export type Database = {
           },
         ]
       }
+      merchant_settings: {
+        Row: {
+          checkout_instructions: string | null
+          created_at: string
+          display_currency: string
+          id: string
+          locale: string
+          merchant_id: string
+          push_enabled: boolean
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_instructions?: string | null
+          created_at?: string
+          display_currency?: string
+          id?: string
+          locale?: string
+          merchant_id: string
+          push_enabled?: boolean
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_instructions?: string | null
+          created_at?: string
+          display_currency?: string
+          id?: string
+          locale?: string
+          merchant_id?: string
+          push_enabled?: boolean
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_settings_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: true
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
+          allowed_domains: string[] | null
           bank_alias: string | null
           bank_cbu: string | null
           bank_instructions: string | null
@@ -241,6 +286,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          allowed_domains?: string[] | null
           bank_alias?: string | null
           bank_cbu?: string | null
           bank_instructions?: string | null
@@ -263,6 +309,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          allowed_domains?: string[] | null
           bank_alias?: string | null
           bank_cbu?: string | null
           bank_instructions?: string | null
@@ -304,8 +351,12 @@ export type Database = {
           idempotency_key: string | null
           merchant_id: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_reference: string | null
           product_id: string | null
           redirect_url: string | null
+          snapshot_currency: string | null
+          snapshot_price: number | null
+          snapshot_redirect_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
         }
@@ -326,8 +377,12 @@ export type Database = {
           idempotency_key?: string | null
           merchant_id: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_reference?: string | null
           product_id?: string | null
           redirect_url?: string | null
+          snapshot_currency?: string | null
+          snapshot_price?: number | null
+          snapshot_redirect_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
         }
@@ -348,8 +403,12 @@ export type Database = {
           idempotency_key?: string | null
           merchant_id?: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_reference?: string | null
           product_id?: string | null
           redirect_url?: string | null
+          snapshot_currency?: string | null
+          snapshot_price?: number | null
+          snapshot_redirect_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
         }
@@ -457,6 +516,7 @@ export type Database = {
           name: string
           price: number
           redirect_url: string | null
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -469,6 +529,7 @@ export type Database = {
           name: string
           price: number
           redirect_url?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -481,11 +542,56 @@ export type Database = {
           name?: string
           price?: number
           redirect_url?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "products_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          merchant_id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          merchant_id: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          merchant_id?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_merchant_id_fkey"
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
@@ -718,6 +824,16 @@ export type Database = {
         Args: { _fx_rate: number; _payment_id: string }
         Returns: Json
       }
+      create_merchant_for_user: {
+        Args: {
+          _business_name: string
+          _country?: string
+          _email: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      generate_payment_reference: { Args: never; Returns: string }
       get_merchant_balance: {
         Args: { _merchant_id: string }
         Returns: {
