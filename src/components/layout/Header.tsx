@@ -1,11 +1,14 @@
 import React from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Menu, Bell, Globe, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -25,9 +28,20 @@ const currencies: { value: Currency; label: string }[] = [
 
 export const Header: React.FC = () => {
   const { locale, currency, setLocale, setCurrency, setSidebarOpen, sidebarOpen } = useApp();
+  const { merchant, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const currentLang = languages.find((l) => l.value === locale);
   const currentCurrency = currencies.find((c) => c.value === currency);
+
+  const initials = merchant?.business_name
+    ? merchant.business_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+    : 'DP';
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-xl lg:px-6">
@@ -104,20 +118,27 @@ export const Header: React.FC = () => {
             <Button variant="ghost" size="sm" className="gap-2 pl-2">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                  MP
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden flex-col items-start sm:flex">
-                <span className="text-sm font-medium">Mi Negocio</span>
+                <span className="text-sm font-medium truncate max-w-[120px]">
+                  {merchant?.business_name || 'Mi Negocio'}
+                </span>
                 <span className="text-xs text-muted-foreground">Merchant</span>
               </div>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="glass-strong w-48">
-            <DropdownMenuItem>Perfil</DropdownMenuItem>
-            <DropdownMenuItem>Configuración</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
+              Perfil
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
+              Configuración
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               Cerrar Sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
