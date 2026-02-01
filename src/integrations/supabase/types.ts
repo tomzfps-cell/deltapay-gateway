@@ -156,6 +156,48 @@ export type Database = {
         }
         Relationships: []
       }
+      gateway_pool_accounts: {
+        Row: {
+          account_holder: string
+          alias: string | null
+          bank_name: string | null
+          cbu: string | null
+          created_at: string
+          cvu: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder: string
+          alias?: string | null
+          bank_name?: string | null
+          cbu?: string | null
+          created_at?: string
+          cvu?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string
+          alias?: string | null
+          bank_name?: string | null
+          cbu?: string | null
+          created_at?: string
+          cvu?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ledger_entries: {
         Row: {
           amount_usdt: number
@@ -279,6 +321,7 @@ export type Database = {
           is_verified: boolean
           legal_name: string | null
           phone: string | null
+          signing_secret: string | null
           tax_id: string | null
           updated_at: string
           usdt_wallet_address: string | null
@@ -302,6 +345,7 @@ export type Database = {
           is_verified?: boolean
           legal_name?: string | null
           phone?: string | null
+          signing_secret?: string | null
           tax_id?: string | null
           updated_at?: string
           usdt_wallet_address?: string | null
@@ -325,6 +369,7 @@ export type Database = {
           is_verified?: boolean
           legal_name?: string | null
           phone?: string | null
+          signing_secret?: string | null
           tax_id?: string | null
           updated_at?: string
           usdt_wallet_address?: string | null
@@ -352,6 +397,12 @@ export type Database = {
           merchant_id: string
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_reference: string | null
+          pool_account_id: string | null
+          pool_account_snapshot_alias: string | null
+          pool_account_snapshot_bank: string | null
+          pool_account_snapshot_cbu: string | null
+          pool_account_snapshot_cvu: string | null
+          pool_account_snapshot_holder: string | null
           product_id: string | null
           redirect_url: string | null
           snapshot_currency: string | null
@@ -378,6 +429,12 @@ export type Database = {
           merchant_id: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_reference?: string | null
+          pool_account_id?: string | null
+          pool_account_snapshot_alias?: string | null
+          pool_account_snapshot_bank?: string | null
+          pool_account_snapshot_cbu?: string | null
+          pool_account_snapshot_cvu?: string | null
+          pool_account_snapshot_holder?: string | null
           product_id?: string | null
           redirect_url?: string | null
           snapshot_currency?: string | null
@@ -404,6 +461,12 @@ export type Database = {
           merchant_id?: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_reference?: string | null
+          pool_account_id?: string | null
+          pool_account_snapshot_alias?: string | null
+          pool_account_snapshot_bank?: string | null
+          pool_account_snapshot_cbu?: string | null
+          pool_account_snapshot_cvu?: string | null
+          pool_account_snapshot_holder?: string | null
           product_id?: string | null
           redirect_url?: string | null
           snapshot_currency?: string | null
@@ -425,6 +488,13 @@ export type Database = {
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_pool_account_id_fkey"
+            columns: ["pool_account_id"]
+            isOneToOne: false
+            referencedRelation: "gateway_pool_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -833,6 +903,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_payment_from_product_slug: {
+        Args: {
+          _customer_email?: string
+          _customer_name?: string
+          _customer_phone?: string
+          _product_slug: string
+        }
+        Returns: Json
+      }
+      generate_payment_redirect_signature: {
+        Args: { _payment_id: string }
+        Returns: Json
+      }
       generate_payment_reference: { Args: never; Returns: string }
       get_merchant_balance: {
         Args: { _merchant_id: string }
@@ -842,6 +925,7 @@ export type Database = {
           balance_total: number
         }[]
       }
+      get_public_payment_view: { Args: { _payment_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
