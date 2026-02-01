@@ -36,11 +36,8 @@ export const Settings: React.FC = () => {
     phone: '',
   });
 
-  // Payment data form
+  // Payment data form (solo USDT - merchants no reciben pesos)
   const [paymentData, setPaymentData] = useState({
-    bank_alias: '',
-    bank_cbu: '',
-    bank_instructions: '',
     usdt_wallet_address: '',
     usdt_wallet_network: 'TRC20',
   });
@@ -65,9 +62,6 @@ export const Settings: React.FC = () => {
         phone: merchant.phone || '',
       });
       setPaymentData({
-        bank_alias: merchant.bank_alias || '',
-        bank_cbu: merchant.bank_cbu || '',
-        bank_instructions: merchant.bank_instructions || '',
         usdt_wallet_address: merchant.usdt_wallet_address || '',
         usdt_wallet_network: merchant.usdt_wallet_network || 'TRC20',
       });
@@ -319,40 +313,6 @@ export const Settings: React.FC = () => {
 
         {/* Payment Data Tab */}
         <TabsContent value="payment" className="space-y-6">
-          <div className="glass rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-6">Datos Bancarios para Cobro</h3>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Alias</Label>
-                <Input
-                  value={paymentData.bank_alias}
-                  onChange={(e) => setPaymentData({ ...paymentData, bank_alias: e.target.value })}
-                  className="input-field font-mono"
-                  placeholder="MI.ALIAS.PAGOS"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>CBU / CVU</Label>
-                <Input
-                  value={paymentData.bank_cbu}
-                  onChange={(e) => setPaymentData({ ...paymentData, bank_cbu: e.target.value })}
-                  className="input-field font-mono"
-                  placeholder="0000003100012345678901"
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Instrucciones para el pagador</Label>
-                <Textarea
-                  value={paymentData.bank_instructions}
-                  onChange={(e) => setPaymentData({ ...paymentData, bank_instructions: e.target.value })}
-                  className="input-field"
-                  rows={3}
-                  placeholder="Transferí el monto exacto incluyendo la referencia en el concepto."
-                />
-              </div>
-            </div>
-          </div>
-
           <div className="glass rounded-xl p-6">
             <h3 className="text-lg font-semibold mb-6">Wallet USDT para Retiros</h3>
             <div className="grid gap-6 sm:grid-cols-2">
