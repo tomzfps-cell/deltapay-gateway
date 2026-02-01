@@ -1,0 +1,17 @@
+{
+  "name": "DeltaPay",
+  "short_name": "DeltaPay",
+  "description": "Gateway de pagos para Argentina y Brasil",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0a0e17",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
