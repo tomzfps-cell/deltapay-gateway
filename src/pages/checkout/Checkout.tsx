@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/i18n';
-import { Copy, Check, Clock, CheckCircle2, XCircle, Loader2, ArrowRight, Building2 } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, ArrowRight, Building2, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,13 +20,7 @@ interface PaymentData {
   currency: string;
   redirect_url: string | null;
   confirmed_at: string | null;
-  pool_account: {
-    alias: string | null;
-    cbu: string | null;
-    cvu: string | null;
-    holder: string | null;
-    bank: string | null;
-  };
+  mp_preference_id: string | null;
   product: {
     name: string | null;
     description: string | null;
@@ -56,8 +50,8 @@ export const Checkout: React.FC = () => {
   const [payment, setPayment] = useState<PaymentData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  const [loadingMp, setLoadingMp] = useState(false);
 
   // Customer form (solo para /p/:slug)
   const [showCustomerForm, setShowCustomerForm] = useState(false);
@@ -97,7 +91,7 @@ export const Checkout: React.FC = () => {
     }
   }, [navigate]);
 
-  // Cargar payment por ID usando RPC seguro
+  // Cargar payment por ID
   const loadPayment = useCallback(async (id: string) => {
     try {
       const { data, error: rpcError } = await supabase.rpc('get_public_payment_view', {
@@ -212,18 +206,6 @@ export const Checkout: React.FC = () => {
     handleRedirect();
   }, [payment?.status, payment?.redirect_url, payment?.id, redirecting]);
 
-  // Copy to clipboard
-  const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-      toast({ title: 'Copiado al portapapeles' });
-    } catch {
-      toast({ title: 'Error al copiar', variant: 'destructive' });
-    }
-  };
-
   // Format time
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -236,6 +218,72 @@ export const Checkout: React.FC = () => {
     e.preventDefault();
     if (productSlug) {
       createPaymentFromSlug(productSlug, customerForm);
+    }
+  };
+
+  // Iniciar pago con Mercado Pago
+  const handlePayWithMercadoPago = async () => {
+    if (!payment) return;
+
+    setLoadingMp(true);
+    try {
+      const response = await supabase.functions.invoke('create-mp-preference', {
+        body: { payment_id: payment.id },
+      });
+
+      if (response.error) {
+        console.error('Error creating MP preference:', response.error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo iniciar el pago. Intenta de nuevo.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const data = response.data as { 
+        success: boolean; 
+        preference_id?: string; 
+        init_point?: string;
+        sandbox_init_point?: string;
+        error?: string;
+        status?: string;
+      };
+
+      if (!data.success) {
+        // If payment is already in a different status, reload
+        if (data.status && data.status !== 'pending') {
+          await loadPayment(payment.id);
+        }
+        toast({
+          title: 'Error',
+          description: data.error || 'No se pudo crear la preferencia de pago',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Redirect to Mercado Pago checkout
+      // In production, use init_point. In sandbox, use sandbox_init_point
+      const redirectUrl = data.init_point || data.sandbox_init_point;
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No se recibió la URL de pago de Mercado Pago',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Error initiating MP payment:', err);
+      toast({
+        title: 'Error',
+        description: 'Error al conectar con Mercado Pago',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingMp(false);
     }
   };
 
@@ -409,7 +457,7 @@ export const Checkout: React.FC = () => {
     );
   }
 
-  // Pending payment - Main checkout view
+  // Pending payment - Main checkout view with Mercado Pago
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 py-8 space-y-6">
@@ -462,136 +510,51 @@ export const Checkout: React.FC = () => {
           </span>
         </div>
 
-        {/* Payment details - POOL ACCOUNT */}
+        {/* Mercado Pago Payment */}
         <div className="glass rounded-xl p-6 space-y-6">
           <div className="space-y-2">
-            <h2 className="font-semibold text-lg">Pagá con transferencia</h2>
+            <h2 className="font-semibold text-lg">Pagá con Mercado Pago</h2>
             <p className="text-sm text-muted-foreground">
-              Transferí el monto exacto a la cuenta de DeltaPay usando la referencia indicada.
+              Usá tu dinero en cuenta de Mercado Pago, tarjeta de crédito, débito o efectivo.
             </p>
           </div>
 
-          {/* Pool account details */}
-          <div className="space-y-4">
-            {payment.pool_account.alias && (
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Alias</Label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted/50 rounded-lg px-4 py-3 font-mono text-lg">
-                    {payment.pool_account.alias}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(payment.pool_account.alias!, 'alias')}
-                    className="shrink-0"
-                  >
-                    {copiedField === 'alias' ? (
-                      <Check className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
+          {/* Mercado Pago Button */}
+          <Button
+            onClick={handlePayWithMercadoPago}
+            disabled={loadingMp || timeLeft === 0}
+            className="w-full h-14 text-lg gap-3 bg-[#009EE3] hover:bg-[#0087CC] text-white font-semibold"
+          >
+            {loadingMp ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Conectando con Mercado Pago...
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-5 w-5" />
+                Pagar con Mercado Pago
+              </>
             )}
+          </Button>
 
-            {payment.pool_account.cbu && (
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">CBU</Label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted/50 rounded-lg px-4 py-3 font-mono text-sm break-all">
-                    {payment.pool_account.cbu}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(payment.pool_account.cbu!, 'cbu')}
-                    className="shrink-0"
-                  >
-                    {copiedField === 'cbu' ? (
-                      <Check className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {payment.pool_account.holder && (
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Titular</Label>
-                <p className="bg-muted/50 rounded-lg px-4 py-3 font-medium">
-                  {payment.pool_account.holder}
-                </p>
-              </div>
-            )}
-
-            {payment.pool_account.bank && (
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Banco</Label>
-                <p className="bg-muted/50 rounded-lg px-4 py-3 text-muted-foreground">
-                  {payment.pool_account.bank}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Payment reference - CRITICAL */}
-          <div className="border-t border-border pt-6 space-y-2">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-              Referencia de pago (obligatoria)
-            </Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 bg-primary/10 border-2 border-primary/30 rounded-lg px-4 py-4 font-mono text-xl font-bold text-center text-primary">
-                {payment.payment_reference}
-              </code>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => copyToClipboard(payment.payment_reference, 'reference')}
-                className="shrink-0 h-14 w-14"
-              >
-                {copiedField === 'reference' ? (
-                  <Check className="h-5 w-5 text-emerald-500" />
-                ) : (
-                  <Copy className="h-5 w-5" />
-                )}
-              </Button>
+          {/* MP Logo and trust badges */}
+          <div className="flex items-center justify-center gap-4 pt-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <svg className="h-6" viewBox="0 0 68 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M25.5 0C18.6 0 13 5.4 13 12C13 18.6 18.6 24 25.5 24C32.4 24 38 18.6 38 12C38 5.4 32.4 0 25.5 0ZM25.5 19.5C21.1 19.5 17.5 16.1 17.5 12C17.5 7.9 21.1 4.5 25.5 4.5C29.9 4.5 33.5 7.9 33.5 12C33.5 16.1 29.9 19.5 25.5 19.5Z" fill="#009EE3"/>
+                <path d="M8.5 0C3.8 0 0 3.8 0 8.5V15.5C0 20.2 3.8 24 8.5 24H10V19.5H8.5C6.3 19.5 4.5 17.7 4.5 15.5V8.5C4.5 6.3 6.3 4.5 8.5 4.5H10V0H8.5Z" fill="#009EE3"/>
+                <path d="M59.5 0C54.8 0 51 3.8 51 8.5V24H55.5V8.5C55.5 6.3 57.3 4.5 59.5 4.5C61.7 4.5 63.5 6.3 63.5 8.5V24H68V8.5C68 3.8 64.2 0 59.5 0Z" fill="#009EE3"/>
+                <path d="M42.5 0C37.8 0 34 3.8 34 8.5V24H38.5V8.5C38.5 6.3 40.3 4.5 42.5 4.5C44.7 4.5 46.5 6.3 46.5 8.5V24H51V8.5C51 3.8 47.2 0 42.5 0Z" fill="#009EE3"/>
+              </svg>
+              <span>Pago seguro</span>
             </div>
-            <p className="text-xs text-amber-500 font-medium">
-              ⚠️ Incluí esta referencia exacta en el concepto de la transferencia
-            </p>
           </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="glass rounded-xl p-6 space-y-4 bg-muted/30">
-          <h3 className="font-medium">Instrucciones</h3>
-          <ol className="space-y-3 text-sm text-muted-foreground">
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">1</span>
-              <span>Abrí tu app de homebanking o billetera virtual</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">2</span>
-              <span>Transferí exactamente <strong className="text-foreground">{formatCurrency(payment.amount, payment.currency as 'ARS' | 'BRL' | 'USD', 'es')}</strong> al alias indicado</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">3</span>
-              <span>Incluí la referencia <strong className="text-foreground">{payment.payment_reference}</strong> en el concepto</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">4</span>
-              <span>Esta página se actualizará automáticamente cuando confirmemos tu pago</span>
-            </li>
-          </ol>
         </div>
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground space-y-2">
-          <p>Procesado por DeltaPay</p>
+          <p>Procesado por DeltaPay con Mercado Pago</p>
           <p className="font-mono">Ref: {payment.payment_reference}</p>
         </div>
       </div>

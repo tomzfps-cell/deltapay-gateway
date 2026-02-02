@@ -378,6 +378,47 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          payment_id: string
+          preference_id: string
+          raw_payload: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          payment_id: string
+          preference_id: string
+          raw_payload?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          payment_id?: string
+          preference_id?: string
+          raw_payload?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_preferences_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_local: number
@@ -395,6 +436,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           merchant_id: string
+          mp_preference_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_reference: string | null
           pool_account_id: string | null
@@ -427,6 +469,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           merchant_id: string
+          mp_preference_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_reference?: string | null
           pool_account_id?: string | null
@@ -459,6 +502,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           merchant_id?: string
+          mp_preference_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_reference?: string | null
           pool_account_id?: string | null
