@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.get-mp-public-key]
 verify_jwt = false
+
+[functions.mp-pay]
+verify_jwt = false

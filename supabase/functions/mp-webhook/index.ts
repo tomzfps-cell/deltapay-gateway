@@ -73,13 +73,100 @@ Deno.serve(async (req) => {
       transaction_amount: mpPayment.transaction_amount,
     }));
 
-    // Get internal payment_id from external_reference
-    const internalPaymentId = mpPayment.external_reference;
+    // Get internal reference (could be payment_id or order_id)
+    const externalReference = mpPayment.external_reference;
 
-    if (!internalPaymentId) {
+    if (!externalReference) {
       console.error("No external_reference in MP payment");
       return new Response("OK", { status: 200, headers: corsHeaders });
     }
+
+    // Check if payment is approved
+    if (mpPayment.status !== "approved") {
+      console.log(`MP payment status is ${mpPayment.status}, not processing confirmation`);
+      
+      // Log the event anyway for auditing
+      await supabase.from("mp_events").insert({
+        order_id: externalReference,
+        mp_payment_id: mpPaymentId,
+        event_type: `payment_${mpPayment.status}`,
+        raw_payload: mpPayment,
+      });
+      
+      return new Response("OK", { status: 200, headers: corsHeaders });
+    }
+
+    // FX rate - in production this would come from an external source
+    const fxRate = 0.0008; // ~1250 ARS per USDT
+
+    // Try to find if this is an order-based payment (ecommerce flow)
+    const { data: orderCheck } = await supabase
+      .from("orders")
+      .select("id, status")
+      .eq("id", externalReference)
+      .single();
+
+    if (orderCheck) {
+      // This is an order-based payment (CardForm flow)
+      console.log(`Processing order payment: ${externalReference}`);
+
+      // Log the event
+      await supabase.from("mp_events").insert({
+        order_id: externalReference,
+        mp_payment_id: mpPaymentId,
+        event_type: "payment_approved",
+        raw_payload: mpPayment,
+      });
+
+      // Idempotency: skip if already paid
+      if (orderCheck.status === "paid") {
+        console.log("Order already paid, skipping");
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
+      // Confirm the order payment
+      const { data: confirmResult, error: confirmError } = await supabase.rpc(
+        "confirm_order_payment",
+        {
+          _order_id: externalReference,
+          _mp_payment_id: mpPaymentId,
+          _fx_rate: fxRate,
+        }
+      );
+
+      if (confirmError) {
+        console.error("Error confirming order payment:", confirmError);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
+      console.log("Order payment confirmed:", confirmResult);
+
+      // Fire webhooks if configured (get merchant from order)
+      const { data: orderData } = await supabase
+        .from("orders")
+        .select("merchant_id, total_amount, product_snapshot_currency")
+        .eq("id", externalReference)
+        .single();
+
+      if (orderData) {
+        await fireWebhooks(supabase, orderData.merchant_id, {
+          event: "payment.confirmed",
+          order_id: externalReference,
+          data: {
+            amount: orderData.total_amount,
+            currency: orderData.product_snapshot_currency,
+            mp_payment_id: mpPaymentId,
+            confirmed_at: new Date().toISOString(),
+          },
+        });
+      }
+
+      return new Response("OK", { status: 200, headers: corsHeaders });
+    }
+
+    // Legacy flow: payment_id based (Wallet Brick)
+    const internalPaymentId = externalReference;
+    console.log(`Processing legacy payment: ${internalPaymentId}`);
 
     // Update mp_preferences with the payment details
     const { error: mpPrefUpdateError } = await supabase
@@ -94,12 +181,6 @@ Deno.serve(async (req) => {
 
     if (mpPrefUpdateError) {
       console.error("Error updating mp_preferences:", mpPrefUpdateError);
-    }
-
-    // Check if payment is approved
-    if (mpPayment.status !== "approved") {
-      console.log(`MP payment status is ${mpPayment.status}, not processing confirmation`);
-      return new Response("OK", { status: 200, headers: corsHeaders });
     }
 
     // Check current internal payment status
@@ -120,18 +201,9 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200, headers: corsHeaders });
     }
 
-    // Get current FX rate for ARS -> USDT
-    // In production, this would come from an external source
-    // For now, we use a reasonable rate
-    const fxRate = 0.0008; // ~1250 ARS per USDT
-
     console.log(`Confirming payment ${internalPaymentId} with FX rate ${fxRate}`);
 
-    // Call the existing confirm_payment function that handles:
-    // - FX snapshot
-    // - USDT conversion
-    // - Ledger credits
-    // - Fee deduction
+    // Call the existing confirm_payment function
     const { data: confirmResult, error: confirmError } = await supabase.rpc(
       "confirm_payment",
       {
@@ -148,77 +220,16 @@ Deno.serve(async (req) => {
     console.log("Payment confirmed successfully:", confirmResult);
 
     // Fire webhook to merchant if configured
-    const { data: webhooks } = await supabase
-      .from("webhooks")
-      .select("*")
-      .eq("merchant_id", internalPayment.merchant_id)
-      .eq("is_active", true)
-      .contains("events", ["payment.confirmed"]);
-
-    if (webhooks && webhooks.length > 0) {
-      // Get full payment data for webhook
-      const { data: fullPayment } = await supabase
-        .from("payments")
-        .select("*")
-        .eq("id", internalPaymentId)
-        .single();
-
-      for (const webhook of webhooks) {
-        try {
-          const webhookPayload = {
-            event: "payment.confirmed",
-            payment_id: internalPaymentId,
-            data: {
-              amount: fullPayment?.amount_local,
-              currency: fullPayment?.currency,
-              amount_usdt_net: fullPayment?.amount_usdt_net,
-              confirmed_at: fullPayment?.confirmed_at,
-            },
-          };
-
-          // Generate HMAC signature
-          const encoder = new TextEncoder();
-          const key = await crypto.subtle.importKey(
-            "raw",
-            encoder.encode(webhook.secret_key),
-            { name: "HMAC", hash: "SHA-256" },
-            false,
-            ["sign"]
-          );
-          const signature = await crypto.subtle.sign(
-            "HMAC",
-            key,
-            encoder.encode(JSON.stringify(webhookPayload))
-          );
-          const signatureHex = Array.from(new Uint8Array(signature))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-
-          // Send webhook
-          const webhookResponse = await fetch(webhook.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-DeltaPay-Signature": signatureHex,
-            },
-            body: JSON.stringify(webhookPayload),
-          });
-
-          // Log delivery
-          await supabase.from("webhook_deliveries").insert({
-            webhook_id: webhook.id,
-            event_type: "payment.confirmed",
-            payload: webhookPayload,
-            response_status: webhookResponse.status,
-            delivered_at: webhookResponse.ok ? new Date().toISOString() : null,
-          });
-
-          console.log(`Webhook sent to ${webhook.url}: ${webhookResponse.status}`);
-        } catch (webhookError) {
-          console.error(`Error sending webhook to ${webhook.url}:`, webhookError);
-        }
-      }
-    }
+    await fireWebhooks(supabase, internalPayment.merchant_id, {
+      event: "payment.confirmed",
+      payment_id: internalPaymentId,
+      data: {
+        amount: mpPayment.transaction_amount,
+        currency: internalPayment.currency,
+        mp_payment_id: mpPaymentId,
+        confirmed_at: new Date().toISOString(),
+      },
+    });
 
     return new Response("OK", { status: 200, headers: corsHeaders });
   } catch (error) {
@@ -227,3 +238,71 @@ Deno.serve(async (req) => {
     return new Response("OK", { status: 200, headers: corsHeaders });
   }
 });
+
+// Helper function to fire merchant webhooks
+async function fireWebhooks(
+  supabase: any,
+  merchantId: string,
+  payload: Record<string, any>
+) {
+  try {
+    const { data: webhooks } = await supabase
+      .from("webhooks")
+      .select("*")
+      .eq("merchant_id", merchantId)
+      .eq("is_active", true)
+      .contains("events", ["payment.confirmed"]);
+
+    if (!webhooks || webhooks.length === 0) {
+      console.log("No webhooks configured for merchant");
+      return;
+    }
+
+    for (const webhook of webhooks) {
+      try {
+        // Generate HMAC signature
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          "raw",
+          encoder.encode(webhook.secret_key),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"]
+        );
+        const signature = await crypto.subtle.sign(
+          "HMAC",
+          key,
+          encoder.encode(JSON.stringify(payload))
+        );
+        const signatureHex = Array.from(new Uint8Array(signature))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        // Send webhook
+        const webhookResponse = await fetch(webhook.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-DeltaPay-Signature": signatureHex,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        // Log delivery
+        await supabase.from("webhook_deliveries").insert({
+          webhook_id: webhook.id,
+          event_type: payload.event,
+          payload: payload,
+          response_status: webhookResponse.status,
+          delivered_at: webhookResponse.ok ? new Date().toISOString() : null,
+        });
+
+        console.log(`Webhook sent to ${webhook.url}: ${webhookResponse.status}`);
+      } catch (webhookError) {
+        console.error(`Error sending webhook to ${webhook.url}:`, webhookError);
+      }
+    }
+  } catch (err) {
+    console.error("Error firing webhooks:", err);
+  }
+}
