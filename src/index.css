@@ -175,6 +175,15 @@
   .btn-primary-glow:hover {
     box-shadow: 0 0 30px hsl(187 92% 50% / 0.5);
   }
+
+  /* Mercado Pago Wallet Brick container */
+  .wallet-brick-container {
+    @apply rounded-lg overflow-hidden;
+  }
+
+  .wallet-brick-container > div {
+    @apply min-h-[48px];
+  }
 }
 
 @layer utilities {
