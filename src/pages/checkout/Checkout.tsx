@@ -66,7 +66,7 @@ export const Checkout: React.FC = () => {
     phone: '',
   });
 
-  // Initialize Mercado Pago SDK
+  // Initialize Mercado Pago SDK with dark theme
   useEffect(() => {
     const initMP = async () => {
       try {
@@ -77,7 +77,9 @@ export const Checkout: React.FC = () => {
         if (data.success && data.public_key) {
           initMercadoPago(data.public_key, { locale: 'es-AR' });
           setMpInitialized(true);
-          console.log('Mercado Pago SDK initialized');
+          console.log('Mercado Pago SDK initialized with public key');
+        } else {
+          console.error('MP_PUBLIC_KEY not available');
         }
       } catch (err) {
         console.error('Error initializing MP SDK:', err);
@@ -515,14 +517,14 @@ export const Checkout: React.FC = () => {
           </div>
 
           {/* Wallet Brick Container */}
-          <div className="min-h-[100px]">
+          <div className="min-h-[60px]">
             {loadingPreference || !mpInitialized ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="ml-3 text-muted-foreground">Cargando opciones de pago...</span>
               </div>
             ) : preferenceId ? (
-              <div id="wallet_container">
+              <div id="wallet_container" className="wallet-brick-container">
                 <Wallet 
                   initialization={{ preferenceId: preferenceId, redirectMode: 'self' }}
                   onReady={() => console.log('Wallet Brick ready')}
