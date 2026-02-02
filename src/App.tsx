@@ -24,6 +24,9 @@ import NotFound from "./pages/NotFound";
 
 // Public Pages
 import Checkout from "./pages/checkout/Checkout";
+import EcommerceCheckout from "./pages/checkout/EcommerceCheckout";
+import OrderThanks from "./pages/checkout/OrderThanks";
+import ProductLanding from "./pages/checkout/ProductLanding";
 
 const queryClient = new QueryClient();
 
@@ -40,9 +43,13 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
 
-              {/* Public checkout routes */}
-              <Route path="/p/:productSlug" element={<Checkout />} />
+              {/* Public checkout routes - Legacy (Wallet Brick) */}
               <Route path="/pay/:paymentId" element={<Checkout />} />
+
+              {/* Public checkout routes - Ecommerce (Card Form) */}
+              <Route path="/p/:productSlug" element={<ProductLanding />} />
+              <Route path="/checkout/:orderId" element={<EcommerceCheckout />} />
+              <Route path="/order/:orderId/thanks" element={<OrderThanks />} />
 
               {/* Protected dashboard routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
