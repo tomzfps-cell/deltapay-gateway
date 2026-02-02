@@ -378,6 +378,51 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          mp_payment_id: string | null
+          order_id: string | null
+          payment_id: string | null
+          raw_payload: Json
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          mp_payment_id?: string | null
+          order_id?: string | null
+          payment_id?: string | null
+          raw_payload?: Json
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          mp_payment_id?: string | null
+          order_id?: string | null
+          payment_id?: string | null
+          raw_payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mp_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mp_preferences: {
         Row: {
           created_at: string
@@ -419,6 +464,87 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_phone: string
+          id: string
+          merchant_id: string
+          product_id: string
+          product_snapshot_amount: number
+          product_snapshot_currency: string
+          product_snapshot_name: string
+          shipping_address: string
+          shipping_city: string
+          shipping_cost: number
+          shipping_lastname: string
+          shipping_name: string
+          shipping_postal_code: string
+          shipping_province: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_phone: string
+          id?: string
+          merchant_id: string
+          product_id: string
+          product_snapshot_amount: number
+          product_snapshot_currency?: string
+          product_snapshot_name: string
+          shipping_address: string
+          shipping_city: string
+          shipping_cost?: number
+          shipping_lastname: string
+          shipping_name: string
+          shipping_postal_code: string
+          shipping_province: string
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_phone?: string
+          id?: string
+          merchant_id?: string
+          product_id?: string
+          product_snapshot_amount?: number
+          product_snapshot_currency?: string
+          product_snapshot_name?: string
+          shipping_address?: string
+          shipping_city?: string
+          shipping_cost?: number
+          shipping_lastname?: string
+          shipping_name?: string
+          shipping_postal_code?: string
+          shipping_province?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_local: number
@@ -432,11 +558,13 @@ export type Database = {
           customer_phone: string | null
           expires_at: string
           fee_usdt: number | null
+          funds_status: string | null
           fx_snapshot_id: string | null
           id: string
           idempotency_key: string | null
           merchant_id: string
           mp_preference_id: string | null
+          order_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_reference: string | null
           pool_account_id: string | null
@@ -446,7 +574,9 @@ export type Database = {
           pool_account_snapshot_cvu: string | null
           pool_account_snapshot_holder: string | null
           product_id: string | null
+          provider: string | null
           redirect_url: string | null
+          settlement_type: string | null
           snapshot_currency: string | null
           snapshot_price: number | null
           snapshot_redirect_url: string | null
@@ -465,11 +595,13 @@ export type Database = {
           customer_phone?: string | null
           expires_at?: string
           fee_usdt?: number | null
+          funds_status?: string | null
           fx_snapshot_id?: string | null
           id?: string
           idempotency_key?: string | null
           merchant_id: string
           mp_preference_id?: string | null
+          order_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_reference?: string | null
           pool_account_id?: string | null
@@ -479,7 +611,9 @@ export type Database = {
           pool_account_snapshot_cvu?: string | null
           pool_account_snapshot_holder?: string | null
           product_id?: string | null
+          provider?: string | null
           redirect_url?: string | null
+          settlement_type?: string | null
           snapshot_currency?: string | null
           snapshot_price?: number | null
           snapshot_redirect_url?: string | null
@@ -498,11 +632,13 @@ export type Database = {
           customer_phone?: string | null
           expires_at?: string
           fee_usdt?: number | null
+          funds_status?: string | null
           fx_snapshot_id?: string | null
           id?: string
           idempotency_key?: string | null
           merchant_id?: string
           mp_preference_id?: string | null
+          order_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_reference?: string | null
           pool_account_id?: string | null
@@ -512,7 +648,9 @@ export type Database = {
           pool_account_snapshot_cvu?: string | null
           pool_account_snapshot_holder?: string | null
           product_id?: string | null
+          provider?: string | null
           redirect_url?: string | null
+          settlement_type?: string | null
           snapshot_currency?: string | null
           snapshot_price?: number | null
           snapshot_redirect_url?: string | null
@@ -532,6 +670,13 @@ export type Database = {
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
@@ -934,6 +1079,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_order_payment: {
+        Args: { _fx_rate: number; _mp_payment_id: string; _order_id: string }
+        Returns: Json
+      }
       confirm_payment: {
         Args: { _fx_rate: number; _payment_id: string }
         Returns: Json
@@ -944,6 +1093,21 @@ export type Database = {
           _country?: string
           _email: string
           _user_id: string
+        }
+        Returns: Json
+      }
+      create_order_from_product: {
+        Args: {
+          _customer_email: string
+          _customer_phone: string
+          _product_slug: string
+          _shipping_address: string
+          _shipping_city: string
+          _shipping_cost?: number
+          _shipping_lastname: string
+          _shipping_name: string
+          _shipping_postal_code: string
+          _shipping_province: string
         }
         Returns: Json
       }
@@ -969,6 +1133,7 @@ export type Database = {
           balance_total: number
         }[]
       }
+      get_order_for_checkout: { Args: { _order_id: string }; Returns: Json }
       get_public_payment_view: { Args: { _payment_id: string }; Returns: Json }
       has_role: {
         Args: {
@@ -982,6 +1147,20 @@ export type Database = {
           _amount_usdt: number
           _idempotency_key?: string
           _merchant_id: string
+        }
+        Returns: Json
+      }
+      update_order_checkout_data: {
+        Args: {
+          _customer_email?: string
+          _customer_phone?: string
+          _order_id: string
+          _shipping_address?: string
+          _shipping_city?: string
+          _shipping_lastname?: string
+          _shipping_name?: string
+          _shipping_postal_code?: string
+          _shipping_province?: string
         }
         Returns: Json
       }
