@@ -294,11 +294,17 @@ export const Products: React.FC = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="gap-2"
-                      onClick={() => window.open(`/p/${product.slug}`, '_blank')}
+                      asChild
                       disabled={!product.slug || !product.is_active}
                     >
-                      <ExternalLink className="h-4 w-4" />
-                      Abrir checkout
+                      <a
+                        href={`/p/${product.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Abrir checkout
+                      </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="gap-2"
