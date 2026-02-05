@@ -18,6 +18,7 @@ interface ProductData {
   price: number;
   currency: string;
   merchant_name: string;
+  image_url: string | null;
 }
 
 export const ProductLanding: React.FC = () => {
@@ -45,6 +46,7 @@ export const ProductLanding: React.FC = () => {
           description,
           price,
           currency,
+          image_url,
           merchant:merchants!products_merchant_id_fkey(business_name)
         `)
         .eq('slug', slug)
@@ -64,6 +66,7 @@ export const ProductLanding: React.FC = () => {
         description: data.description,
         price: data.price,
         currency: data.currency,
+        image_url: (data as any).image_url || null,
         merchant_name: (data.merchant as any)?.business_name || 'DeltaPay',
       });
     } catch (err) {
@@ -83,20 +86,13 @@ export const ProductLanding: React.FC = () => {
     }
   }, [productSlug, loadProduct]);
 
-  const handleCreateOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email) {
-      toast({ title: 'Ingresá tu email', variant: 'destructive' });
-      return;
-    }
-
+  const handleStartCheckout = async () => {
     setCreating(true);
     try {
       const { data, error: rpcError } = await supabase.rpc('create_order_from_product', {
         _product_slug: productSlug!,
-        _customer_email: email,
-        _customer_phone: phone || '',
+        _customer_email: '',
+        _customer_phone: '',
         _shipping_name: '',
         _shipping_lastname: '',
         _shipping_address: '',
@@ -163,9 +159,19 @@ export const ProductLanding: React.FC = () => {
           {/* Product info */}
           <div className="space-y-6">
             <div className="glass rounded-xl p-6 space-y-4">
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <Package className="h-16 w-16 text-muted-foreground" />
-              </div>
+              {product.image_url ? (
+                <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                  <img 
+                    src={product.image_url} 
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                  <Package className="h-16 w-16 text-muted-foreground" />
+                </div>
+              )}
               
               <div>
                 <h2 className="text-2xl font-bold">{product.name}</h2>
@@ -200,39 +206,15 @@ export const ProductLanding: React.FC = () => {
           <div className="glass rounded-xl p-6 space-y-6">
             <h3 className="text-lg font-semibold">Comenzar compra</h3>
 
-            <form onSubmit={handleCreateOrder} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Recibirás la confirmación de tu pedido
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono (opcional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+54 9 11 1234-5678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                />
-              </div>
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-sm">
+                Completá tus datos de contacto y envío en el siguiente paso.
+              </p>
 
               <Button 
-                type="submit"
                 className="w-full btn-primary-glow gap-2 h-12 text-base"
                 disabled={creating}
+                onClick={handleStartCheckout}
               >
                 {creating ? (
                   <>
@@ -246,7 +228,7 @@ export const ProductLanding: React.FC = () => {
                   </>
                 )}
               </Button>
-            </form>
+            </div>
 
             <div className="border-t border-border pt-4">
               <div className="flex justify-between text-sm">
