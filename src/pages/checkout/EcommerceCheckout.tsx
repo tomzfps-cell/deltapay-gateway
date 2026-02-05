@@ -169,6 +169,9 @@ export const EcommerceCheckout: React.FC = () => {
   useEffect(() => {
     if (currentStep !== 'payment' || mpReady) return;
 
+    let mounted = true;
+    let fallbackTimer: NodeJS.Timeout | null = null;
+
     const loadMPScript = async () => {
       // Check if SDK already loaded
       if (window.MercadoPago) {
@@ -193,6 +196,8 @@ export const EcommerceCheckout: React.FC = () => {
         const data = response.data as { success: boolean; public_key?: string };
         if (!data.success || !data.public_key) {
           console.error('MP_PUBLIC_KEY not available');
+          // Enable form anyway so user can see the issue
+          if (mounted) setMpReady(true);
           return;
         }
 
@@ -218,12 +223,14 @@ export const EcommerceCheckout: React.FC = () => {
           },
           callbacks: {
             onFormMounted: (error: any) => {
+              if (fallbackTimer) clearTimeout(fallbackTimer);
               if (error) {
                 console.error('CardForm mount error:', error);
-                return;
+              } else {
+                console.log('CardForm mounted successfully');
               }
-              console.log('CardForm mounted successfully');
-              setMpReady(true);
+              // Always enable form after mount callback (with or without error)
+              if (mounted) setMpReady(true);
             },
             onSubmit: async (event: any) => {
               event.preventDefault();
@@ -236,14 +243,26 @@ export const EcommerceCheckout: React.FC = () => {
         });
 
         cardFormRef.current = cardForm;
+
+        // Fallback timer - if onFormMounted doesn't fire within 8 seconds, enable anyway
+        fallbackTimer = setTimeout(() => {
+          if (mounted && !mpReady) {
+            console.warn('MP CardForm mount timeout - enabling form via fallback');
+            setMpReady(true);
+          }
+        }, 8000);
+
       } catch (err) {
         console.error('Error initializing MP CardForm:', err);
+        if (mounted) setMpReady(true); // Enable form so user sees error state
       }
     };
 
     loadMPScript();
 
     return () => {
+      mounted = false;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       if (cardFormRef.current) {
         try {
           cardFormRef.current.unmount();
@@ -716,14 +735,15 @@ export const EcommerceCheckout: React.FC = () => {
                   </div>
                 )}
 
-                {!mpReady && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="ml-3 text-muted-foreground">Cargando formulario de pago...</span>
-                  </div>
-                )}
+                <div className="relative">
+                  {!mpReady && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <span className="ml-3 text-muted-foreground">Cargando formulario de pago...</span>
+                    </div>
+                  )}
 
-                <form id="form-checkout" className={cn("space-y-4", !mpReady && "hidden")}>
+                <form id="form-checkout" className="space-y-4">
                   <div className="space-y-2">
                     <Label>Número de tarjeta</Label>
                     <div id="form-checkout__cardNumber" className="h-10 border border-input rounded-md bg-background" />
@@ -771,6 +791,7 @@ export const EcommerceCheckout: React.FC = () => {
                     <div id="form-checkout__cardholderEmail" className="h-10 border border-input rounded-md bg-background" />
                   </div>
                 </form>
+                </div>
 
                 <div className="flex gap-3">
                   <Button 
