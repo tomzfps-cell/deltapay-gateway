@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/i18n';
@@ -7,9 +7,8 @@ import {
   Truck, CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 interface ProductData {
   id: string;
@@ -31,10 +30,6 @@ export const ProductLanding: React.FC = () => {
   const [product, setProduct] = useState<ProductData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Form for initial customer data
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-
   // Load product data
   const loadProduct = useCallback(async (slug: string) => {
     try {
@@ -46,7 +41,6 @@ export const ProductLanding: React.FC = () => {
           description,
           price,
           currency,
-          image_url,
           merchant:merchants!products_merchant_id_fkey(business_name)
         `)
         .eq('slug', slug)
@@ -60,14 +54,17 @@ export const ProductLanding: React.FC = () => {
         return;
       }
 
+      // Cast data to handle the join properly
+      const productData = data as any;
+
       setProduct({
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        currency: data.currency,
-        image_url: (data as any).image_url || null,
-        merchant_name: (data.merchant as any)?.business_name || 'DeltaPay',
+        id: productData.id,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        currency: productData.currency,
+        merchant_name: productData.merchant?.business_name || 'DeltaPay',
+        image_url: productData.image_url || null,
       });
     } catch (err) {
       console.error('Error loading product:', err);
