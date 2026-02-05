@@ -479,31 +479,31 @@ export const EcommerceCheckout: React.FC = () => {
   // Confirmation step
   if (currentStep === 'confirmation' || order.status === 'paid') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="glass rounded-2xl p-8 text-center max-w-md">
+      <div className="min-h-screen checkout-light flex items-center justify-center p-4">
+        <div className="glass rounded-2xl p-8 text-center max-w-md shadow-lg">
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
             <CheckCircle2 className="h-20 w-20 text-emerald-500 mx-auto relative" />
           </div>
           <h1 className="text-2xl font-bold mb-2 text-emerald-500">¡Pedido confirmado!</h1>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-gray-600 mb-6">
             Tu pedido de {order.product_name} fue procesado correctamente.
           </p>
           
-          <div className="glass rounded-lg p-4 text-left space-y-3 mb-6">
+          <div className="bg-gray-50 rounded-lg p-4 text-left space-y-3 mb-6 border border-gray-200">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Producto</span>
-              <span className="font-medium">{order.product_name}</span>
+              <span className="text-gray-500">Producto</span>
+              <span className="font-medium text-gray-900">{order.product_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Total pagado</span>
-              <span className="font-semibold text-primary">
+              <span className="text-gray-500">Total pagado</span>
+              <span className="font-semibold text-cyan-600">
                 {formatCurrency(order.total_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}
               </span>
             </div>
-            <div className="border-t border-border pt-3">
-              <span className="text-muted-foreground text-sm">Envío a:</span>
-              <p className="text-sm">
+            <div className="border-t border-gray-200 pt-3">
+              <span className="text-gray-500 text-sm">Envío a:</span>
+              <p className="text-sm text-gray-700">
                 {order.shipping_name} {order.shipping_lastname}<br />
                 {order.shipping_address}<br />
                 {order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}
@@ -512,7 +512,7 @@ export const EcommerceCheckout: React.FC = () => {
           </div>
 
           <Button 
-            className="w-full btn-primary-glow gap-2"
+            className="w-full gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg"
             onClick={() => navigate(`/order/${orderId}/thanks`)}
           >
             Ver detalles del pedido
@@ -524,14 +524,14 @@ export const EcommerceCheckout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen checkout-light">
       <div className="max-w-6xl mx-auto p-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-3">
-            <Building2 className="h-6 w-6 text-primary" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-50 mb-3">
+            <Building2 className="h-6 w-6 text-cyan-600" />
           </div>
-          <h1 className="text-xl font-bold">{order.merchant_name}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{order.merchant_name}</h1>
         </div>
 
         {/* Step indicator */}
@@ -549,15 +549,15 @@ export const EcommerceCheckout: React.FC = () => {
                 )}>
                   <div className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                    isCompleted ? "bg-primary text-primary-foreground" :
-                    isActive ? "bg-primary/20 text-primary ring-2 ring-primary" :
-                    "bg-muted text-muted-foreground"
+                    isCompleted ? "bg-cyan-500 text-white" :
+                    isActive ? "bg-cyan-100 text-cyan-600 ring-2 ring-cyan-500" :
+                    "bg-gray-100 text-gray-400"
                   )}>
                     {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                   </div>
                   <span className={cn(
                     "text-xs mt-1 hidden sm:block",
-                    isActive ? "text-primary font-medium" : "text-muted-foreground"
+                    isActive ? "text-cyan-600 font-medium" : "text-gray-500"
                   )}>
                     {step.label}
                   </span>
@@ -565,7 +565,7 @@ export const EcommerceCheckout: React.FC = () => {
                 {index < steps.length - 1 && (
                   <div className={cn(
                     "w-12 h-0.5 mx-2",
-                    index < currentStepIndex ? "bg-primary" : "bg-muted"
+                    index < currentStepIndex ? "bg-cyan-500" : "bg-gray-200"
                   )} />
                 )}
               </React.Fragment>
@@ -578,40 +578,40 @@ export const EcommerceCheckout: React.FC = () => {
           <div className="space-y-6">
             {/* Contact step */}
             {currentStep === 'contact' && (
-              <div className="glass rounded-xl p-6 space-y-6">
+              <div className="bg-white rounded-xl p-6 space-y-6 shadow-sm border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Datos de contacto</h2>
+                  <Mail className="h-5 w-5 text-cyan-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">Datos de contacto</h2>
                 </div>
                 
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email" className="text-gray-700">Email *</Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="tu@email.com"
                       value={contactForm.email}
                       onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="input-field"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Teléfono *</Label>
+                    <Label htmlFor="phone" className="text-gray-700">Teléfono *</Label>
                     <Input
                       id="phone"
                       type="tel"
                       placeholder="+54 9 11 1234-5678"
                       value={contactForm.phone}
                       onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className="input-field"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                     />
                   </div>
                 </div>
 
                 <Button 
-                  className="w-full btn-primary-glow gap-2"
+                  className="w-full gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-md"
                   onClick={goToNextStep}
                   disabled={saving}
                 >
@@ -624,93 +624,93 @@ export const EcommerceCheckout: React.FC = () => {
 
             {/* Shipping step */}
             {currentStep === 'shipping' && (
-              <div className="glass rounded-xl p-6 space-y-6">
+              <div className="bg-white rounded-xl p-6 space-y-6 shadow-sm border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Dirección de envío</h2>
+                  <Truck className="h-5 w-5 text-cyan-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">Dirección de envío</h2>
                 </div>
                 
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nombre *</Label>
+                      <Label htmlFor="name" className="text-gray-700">Nombre *</Label>
                       <Input
                         id="name"
                         placeholder="Nombre"
                         value={shippingForm.name}
                         onChange={(e) => setShippingForm(prev => ({ ...prev, name: e.target.value }))}
-                        className="input-field"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastname">Apellido *</Label>
+                      <Label htmlFor="lastname" className="text-gray-700">Apellido *</Label>
                       <Input
                         id="lastname"
                         placeholder="Apellido"
                         value={shippingForm.lastname}
                         onChange={(e) => setShippingForm(prev => ({ ...prev, lastname: e.target.value }))}
-                        className="input-field"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="address">Dirección *</Label>
+                    <Label htmlFor="address" className="text-gray-700">Dirección *</Label>
                     <Input
                       id="address"
                       placeholder="Calle y número, piso, depto"
                       value={shippingForm.address}
                       onChange={(e) => setShippingForm(prev => ({ ...prev, address: e.target.value }))}
-                      className="input-field"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">Ciudad *</Label>
+                      <Label htmlFor="city" className="text-gray-700">Ciudad *</Label>
                       <Input
                         id="city"
                         placeholder="Ciudad"
                         value={shippingForm.city}
                         onChange={(e) => setShippingForm(prev => ({ ...prev, city: e.target.value }))}
-                        className="input-field"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="province">Provincia *</Label>
+                      <Label htmlFor="province" className="text-gray-700">Provincia *</Label>
                       <Input
                         id="province"
                         placeholder="Provincia"
                         value={shippingForm.province}
                         onChange={(e) => setShippingForm(prev => ({ ...prev, province: e.target.value }))}
-                        className="input-field"
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="postal_code">Código Postal *</Label>
+                    <Label htmlFor="postal_code" className="text-gray-700">Código Postal *</Label>
                     <Input
                       id="postal_code"
                       placeholder="CP"
                       value={shippingForm.postal_code}
                       onChange={(e) => setShippingForm(prev => ({ ...prev, postal_code: e.target.value }))}
-                      className="input-field w-32"
+                      className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500 w-32"
                     />
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <Button 
-                    variant="outline" 
-                    className="gap-2"
+                    variant="outline"
+                    className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
                     onClick={goToPreviousStep}
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Volver
                   </Button>
                   <Button 
-                    className="flex-1 btn-primary-glow gap-2"
+                    className="flex-1 gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-md"
                     onClick={goToNextStep}
                     disabled={saving}
                   >
@@ -724,46 +724,46 @@ export const EcommerceCheckout: React.FC = () => {
 
             {/* Payment step */}
             {currentStep === 'payment' && (
-              <div className="glass rounded-xl p-6 space-y-6">
+              <div className="bg-white rounded-xl p-6 space-y-6 shadow-sm border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Datos de pago</h2>
+                  <CreditCard className="h-5 w-5 text-cyan-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">Datos de pago</h2>
                 </div>
 
                 {paymentError && (
-                  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-destructive text-sm">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
                     {paymentError}
                   </div>
                 )}
 
                 <div className="relative">
                   {!mpReady && (
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      <span className="ml-3 text-muted-foreground">Cargando formulario de pago...</span>
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+                      <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+                      <span className="ml-3 text-gray-500">Cargando formulario de pago...</span>
                     </div>
                   )}
 
-                <form id="form-checkout" className="space-y-4">
+                <form id="form-checkout" className="space-y-4 checkout-form-light">
                   <div className="space-y-2">
-                    <Label>Número de tarjeta</Label>
-                    <div id="form-checkout__cardNumber" className="mp-input-wrapper" />
+                    <Label className="text-gray-700">Número de tarjeta</Label>
+                    <div id="form-checkout__cardNumber" className="mp-input-wrapper-light" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Vencimiento</Label>
-                      <div id="form-checkout__expirationDate" className="mp-input-wrapper" />
+                      <Label className="text-gray-700">Vencimiento</Label>
+                      <div id="form-checkout__expirationDate" className="mp-input-wrapper-light" />
                     </div>
                     <div className="space-y-2">
-                      <Label>CVV</Label>
-                      <div id="form-checkout__securityCode" className="mp-input-wrapper" />
+                      <Label className="text-gray-700">CVV</Label>
+                      <div id="form-checkout__securityCode" className="mp-input-wrapper-light" />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Nombre en la tarjeta</Label>
-                    <div id="form-checkout__cardholderName" className="mp-input-wrapper" />
+                    <Label className="text-gray-700">Nombre en la tarjeta</Label>
+                    <div id="form-checkout__cardholderName" className="mp-input-wrapper-light" />
                   </div>
                   
                   {/* Issuer field - hidden but required by MP SDK */}
@@ -772,24 +772,24 @@ export const EcommerceCheckout: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Cuotas</Label>
-                    <select id="form-checkout__installments" className="mp-select-dark" />
+                    <Label className="text-gray-700">Cuotas</Label>
+                    <select id="form-checkout__installments" className="mp-select-light" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Tipo de documento</Label>
-                      <select id="form-checkout__identificationType" className="mp-select-dark" />
+                      <Label className="text-gray-700">Tipo de documento</Label>
+                      <select id="form-checkout__identificationType" className="mp-select-light" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Número de documento</Label>
-                      <div id="form-checkout__identificationNumber" className="mp-input-wrapper" />
+                      <Label className="text-gray-700">Número de documento</Label>
+                      <div id="form-checkout__identificationNumber" className="mp-input-wrapper-light" />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Email</Label>
-                    <div id="form-checkout__cardholderEmail" className="mp-input-wrapper" />
+                    <Label className="text-gray-700">Email</Label>
+                    <div id="form-checkout__cardholderEmail" className="mp-input-wrapper-light" />
                   </div>
                 </form>
                 </div>
@@ -797,7 +797,7 @@ export const EcommerceCheckout: React.FC = () => {
                 <div className="flex gap-3">
                   <Button 
                     variant="outline" 
-                    className="gap-2"
+                    className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
                     onClick={goToPreviousStep}
                     disabled={processing}
                   >
@@ -807,7 +807,7 @@ export const EcommerceCheckout: React.FC = () => {
                   <Button 
                     type="submit"
                     form="form-checkout"
-                    className="flex-1 btn-primary-glow gap-2"
+                    className="flex-1 gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-md"
                     disabled={!mpReady || processing}
                     onClick={(e) => {
                       e.preventDefault();
@@ -828,7 +828,7 @@ export const EcommerceCheckout: React.FC = () => {
                   </Button>
                 </div>
 
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
                   <ShieldCheck className="h-4 w-4" />
                   Pago seguro procesado por Mercado Pago
                 </div>
@@ -838,12 +838,12 @@ export const EcommerceCheckout: React.FC = () => {
 
           {/* Order summary sidebar */}
           <div className="lg:sticky lg:top-8 h-fit">
-            <div className="glass rounded-xl p-6 space-y-4">
-              <h3 className="font-semibold">Resumen del pedido</h3>
+            <div className="bg-white rounded-xl p-6 space-y-4 shadow-sm border border-gray-200">
+              <h3 className="font-semibold text-gray-900">Resumen del pedido</h3>
               
               {/* Product image */}
               {order.product_image_url && (
-                <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
                   <img 
                     src={order.product_image_url} 
                     alt={order.product_name}
@@ -854,13 +854,13 @@ export const EcommerceCheckout: React.FC = () => {
 
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{order.product_name}</span>
-                  <span>{formatCurrency(order.product_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}</span>
+                  <span className="text-gray-500">{order.product_name}</span>
+                  <span className="text-gray-900">{formatCurrency(order.product_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}</span>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Envío</span>
-                  <span>
+                  <span className="text-gray-500">Envío</span>
+                  <span className="text-gray-900">
                     {order.shipping_cost > 0 
                       ? formatCurrency(order.shipping_cost, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')
                       : 'Gratis'
@@ -868,9 +868,9 @@ export const EcommerceCheckout: React.FC = () => {
                   </span>
                 </div>
                 
-                <div className="border-t border-border pt-3 flex justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="stat-value text-xl">
+                <div className="border-t border-gray-200 pt-3 flex justify-between">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="text-xl font-bold text-gray-900">
                     {formatCurrency(order.total_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}
                   </span>
                 </div>
@@ -878,12 +878,12 @@ export const EcommerceCheckout: React.FC = () => {
 
               {/* Shipping preview */}
               {(currentStep === 'shipping' || currentStep === 'payment') && shippingForm.address && (
-                <div className="border-t border-border pt-4">
+                <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
                     <div>
-                      <p className="font-medium">{shippingForm.name} {shippingForm.lastname}</p>
-                      <p className="text-muted-foreground">
+                      <p className="font-medium text-gray-900">{shippingForm.name} {shippingForm.lastname}</p>
+                      <p className="text-gray-500">
                         {shippingForm.address}<br />
                         {shippingForm.city}, {shippingForm.province} {shippingForm.postal_code}
                       </p>
@@ -894,15 +894,15 @@ export const EcommerceCheckout: React.FC = () => {
 
               {/* Contact preview */}
               {currentStep === 'payment' && contactForm.email && (
-                <div className="border-t border-border pt-4">
+                <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{contactForm.email}</span>
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">{contactForm.email}</span>
                   </div>
                   {contactForm.phone && (
                     <div className="flex items-center gap-2 text-sm mt-1">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{contactForm.phone}</span>
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-600">{contactForm.phone}</span>
                     </div>
                   )}
                 </div>
