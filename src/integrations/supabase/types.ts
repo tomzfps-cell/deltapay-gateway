@@ -770,6 +770,7 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           description: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           merchant_id: string
           name: string
@@ -783,6 +784,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           merchant_id: string
           name: string
@@ -796,6 +798,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           merchant_id?: string
           name?: string
