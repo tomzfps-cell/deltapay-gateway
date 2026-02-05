@@ -31,6 +31,7 @@ interface OrderData {
   shipping_province: string;
   shipping_postal_code: string;
   merchant_name: string;
+  product_image_url?: string | null;
 }
 
 interface PaymentData {
@@ -114,7 +115,7 @@ export const EcommerceCheckout: React.FC = () => {
 
       if (rpcError) throw rpcError;
 
-      const result = data as unknown as { success: boolean; order?: OrderData; payment?: PaymentData; error?: string };
+      const result = data as unknown as { success: boolean; order?: OrderData & { product_image_url?: string }; payment?: PaymentData; error?: string };
 
       if (!result.success || !result.order) {
         setError(result.error || 'Pedido no encontrado');
@@ -746,49 +747,49 @@ export const EcommerceCheckout: React.FC = () => {
                 <form id="form-checkout" className="space-y-4">
                   <div className="space-y-2">
                     <Label>Número de tarjeta</Label>
-                    <div id="form-checkout__cardNumber" className="h-10 border border-input rounded-md bg-background" />
+                    <div id="form-checkout__cardNumber" className="mp-input-wrapper" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Vencimiento</Label>
-                      <div id="form-checkout__expirationDate" className="h-10 border border-input rounded-md bg-background" />
+                      <div id="form-checkout__expirationDate" className="mp-input-wrapper" />
                     </div>
                     <div className="space-y-2">
                       <Label>CVV</Label>
-                      <div id="form-checkout__securityCode" className="h-10 border border-input rounded-md bg-background" />
+                      <div id="form-checkout__securityCode" className="mp-input-wrapper" />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Nombre en la tarjeta</Label>
-                    <div id="form-checkout__cardholderName" className="h-10 border border-input rounded-md bg-background" />
+                    <div id="form-checkout__cardholderName" className="mp-input-wrapper" />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label>Banco emisor</Label>
-                    <select id="form-checkout__issuer" className="w-full h-10 border border-input rounded-md bg-background px-3" />
+                  {/* Issuer field - hidden but required by MP SDK */}
+                  <div className="mp-issuer-hidden">
+                    <select id="form-checkout__issuer" aria-hidden="true" tabIndex={-1} />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Cuotas</Label>
-                    <select id="form-checkout__installments" className="w-full h-10 border border-input rounded-md bg-background px-3" />
+                    <select id="form-checkout__installments" className="mp-select-dark" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Tipo de documento</Label>
-                      <select id="form-checkout__identificationType" className="w-full h-10 border border-input rounded-md bg-background px-3" />
+                      <select id="form-checkout__identificationType" className="mp-select-dark" />
                     </div>
                     <div className="space-y-2">
                       <Label>Número de documento</Label>
-                      <div id="form-checkout__identificationNumber" className="h-10 border border-input rounded-md bg-background" />
+                      <div id="form-checkout__identificationNumber" className="mp-input-wrapper" />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <div id="form-checkout__cardholderEmail" className="h-10 border border-input rounded-md bg-background" />
+                    <div id="form-checkout__cardholderEmail" className="mp-input-wrapper" />
                   </div>
                 </form>
                 </div>
@@ -840,6 +841,17 @@ export const EcommerceCheckout: React.FC = () => {
             <div className="glass rounded-xl p-6 space-y-4">
               <h3 className="font-semibold">Resumen del pedido</h3>
               
+              {/* Product image */}
+              {order.product_image_url && (
+                <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                  <img 
+                    src={order.product_image_url} 
+                    alt={order.product_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{order.product_name}</span>
