@@ -189,31 +189,127 @@
   .mp-input-wrapper {
     @apply h-10 border border-input rounded-md overflow-hidden;
     background-color: hsl(var(--muted) / 0.3);
+    color-scheme: dark;
   }
 
   .mp-input-wrapper iframe {
     @apply w-full h-full;
   }
 
+  /* Mercado Pago native input styling for dark mode */
+  .mp-input-wrapper input,
+  #form-checkout input {
+    @apply w-full h-full px-3 py-2 text-sm;
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: none !important;
+    caret-color: hsl(var(--primary)) !important;
+    color-scheme: dark;
+  }
+
+  .mp-input-wrapper input::placeholder,
+  #form-checkout input::placeholder {
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  .mp-input-wrapper input:focus,
+  #form-checkout input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Force autofill styling for dark mode */
+  .mp-input-wrapper input:-webkit-autofill,
+  .mp-input-wrapper input:-webkit-autofill:hover,
+  .mp-input-wrapper input:-webkit-autofill:focus,
+  #form-checkout input:-webkit-autofill,
+  #form-checkout input:-webkit-autofill:hover,
+  #form-checkout input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #FFFFFF !important;
+    -webkit-box-shadow: 0 0 0px 1000px hsl(var(--muted) / 0.3) inset !important;
+    background-color: transparent !important;
+    caret-color: hsl(var(--primary)) !important;
+  }
+
   /* Style MP select elements for dark mode */
   .mp-select-dark {
-    @apply w-full h-10 border border-input rounded-md px-3;
-    color: hsl(var(--foreground));
-    background-color: hsl(var(--muted) / 0.3);
+    @apply w-full h-10 rounded-md px-3 text-sm cursor-pointer;
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color-scheme: dark;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.5rem center !important;
+    background-size: 1rem !important;
+    padding-right: 2rem !important;
   }
 
   .mp-select-dark:focus {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply outline-none;
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
   }
 
   .mp-select-dark option {
-    background-color: hsl(var(--popover));
-    color: hsl(var(--popover-foreground));
+    background-color: hsl(var(--popover)) !important;
+    color: #FFFFFF !important;
+    padding: 0.5rem;
+  }
+
+  .mp-select-dark:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Hide issuer field visually but keep in DOM for SDK */
   .mp-issuer-hidden {
     @apply sr-only;
+  }
+
+  /* Ensure all form checkout elements are accessible */
+  #form-checkout * {
+    color-scheme: dark;
+  }
+
+  #form-checkout input:not([type="hidden"]),
+  #form-checkout select {
+    pointer-events: auto !important;
+    user-select: text !important;
+  }
+
+  /* Enhanced input-field for dark mode */
+  .input-field {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    caret-color: hsl(var(--primary)) !important;
+    color-scheme: dark;
+  }
+
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  .input-field:focus {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+    outline: none !important;
+  }
+
+  .input-field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .input-field:-webkit-autofill,
+  .input-field:-webkit-autofill:hover,
+  .input-field:-webkit-autofill:focus {
+    -webkit-text-fill-color: #FFFFFF !important;
+    -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.06) inset !important;
+    caret-color: hsl(var(--primary)) !important;
   }
 }
 
