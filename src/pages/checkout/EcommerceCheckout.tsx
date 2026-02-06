@@ -745,76 +745,70 @@ export const EcommerceCheckout: React.FC = () => {
                   )}
 
                 <form id="form-checkout" className="space-y-4 checkout-form-light">
-                  {/* Card Number - IFRAME controlled by MP SDK */}
                   <div className="space-y-2">
-                    <Label className="text-gray-700">Número de tarjeta</Label>
+                    <Label>Número de tarjeta</Label>
                     <div id="form-checkout__cardNumber" className="mp-input-wrapper-light" />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Expiration Date - IFRAME controlled by MP SDK */}
                     <div className="space-y-2">
-                      <Label className="text-gray-700">Vencimiento</Label>
+                      <Label>Vencimiento</Label>
                       <div id="form-checkout__expirationDate" className="mp-input-wrapper-light" />
                     </div>
-                    {/* Security Code - IFRAME controlled by MP SDK */}
                     <div className="space-y-2">
-                      <Label className="text-gray-700">CVV</Label>
+                      <Label>CVV</Label>
                       <div id="form-checkout__securityCode" className="mp-input-wrapper-light" />
                     </div>
                   </div>
-                  
-                  {/* Cardholder Name - NATIVE INPUT (not iframe) */}
+
                   <div className="space-y-2">
-                    <Label htmlFor="form-checkout__cardholderName" className="text-gray-700">Nombre en la tarjeta</Label>
-                    <input 
-                      type="text"
+                    <Label>Nombre en la tarjeta</Label>
+                    <input
                       id="form-checkout__cardholderName"
+                      name="cardholderName"
+                      type="text"
                       placeholder="Nombre como aparece en la tarjeta"
                       autoComplete="cc-name"
-                      className="w-full h-10 px-3 text-sm rounded-md bg-white border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none"
+                      className="mp-input-native-light"
                     />
                   </div>
-                  
-                  {/* Issuer field - hidden but required by MP SDK */}
+
                   <div className="mp-issuer-hidden">
-                    <select id="form-checkout__issuer" aria-hidden="true" tabIndex={-1} />
+                    <select id="form-checkout__issuer" aria-hidden="true" />
                   </div>
-                  
-                  {/* Installments - NATIVE SELECT populated by MP SDK */}
+
                   <div className="space-y-2">
-                    <Label htmlFor="form-checkout__installments" className="text-gray-700">Cuotas</Label>
+                    <Label>Cuotas</Label>
                     <select id="form-checkout__installments" className="mp-select-light" />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Identification Type - NATIVE SELECT populated by MP SDK */}
                     <div className="space-y-2">
-                      <Label htmlFor="form-checkout__identificationType" className="text-gray-700">Tipo de documento</Label>
+                      <Label>Tipo de documento</Label>
                       <select id="form-checkout__identificationType" className="mp-select-light" />
                     </div>
-                    {/* Identification Number - NATIVE INPUT (not iframe) */}
                     <div className="space-y-2">
-                      <Label htmlFor="form-checkout__identificationNumber" className="text-gray-700">Número de documento</Label>
-                      <input 
-                        type="text"
+                      <Label>Número de documento</Label>
+                      <input
                         id="form-checkout__identificationNumber"
+                        name="identificationNumber"
+                        type="text"
                         placeholder="Número de documento"
                         inputMode="numeric"
-                        className="w-full h-10 px-3 text-sm rounded-md bg-white border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none"
+                        className="mp-input-native-light"
                       />
                     </div>
                   </div>
-                  
-                  {/* Email - NATIVE INPUT (not iframe) */}
+
                   <div className="space-y-2">
-                    <Label htmlFor="form-checkout__cardholderEmail" className="text-gray-700">Email</Label>
-                    <input 
-                      type="email"
+                    <Label>Email</Label>
+                    <input
                       id="form-checkout__cardholderEmail"
-                      placeholder="tu@email.com"
+                      name="cardholderEmail"
+                      type="email"
+                      placeholder="E-mail"
                       autoComplete="email"
-                      className="w-full h-10 px-3 text-sm rounded-md bg-white border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none"
+                      className="mp-input-native-light"
                     />
                   </div>
                 </form>
