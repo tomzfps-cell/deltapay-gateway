@@ -43,7 +43,6 @@ export const OrderThanks: React.FC = () => {
       if (rpcError) throw rpcError;
 
       const result = data as unknown as { success: boolean; order?: OrderData; error?: string };
-
       if (!result.success || !result.order) {
         setError(result.error || 'Pedido no encontrado');
         return;
@@ -80,7 +79,7 @@ export const OrderThanks: React.FC = () => {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <Package className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-2">Error</h1>

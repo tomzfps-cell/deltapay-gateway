@@ -386,7 +386,7 @@ export const Checkout: React.FC = () => {
   // Expired state
   if (payment.status === 'expired') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-2">Pago expirado</h1>

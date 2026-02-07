@@ -120,7 +120,7 @@ export const ProductLanding: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="checkout-light min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Cargando producto...</p>
@@ -131,7 +131,7 @@ export const ProductLanding: React.FC = () => {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-2">Producto no encontrado</h1>
@@ -142,7 +142,7 @@ export const ProductLanding: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="checkout-light min-h-screen">
       <div className="max-w-4xl mx-auto p-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">

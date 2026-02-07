@@ -116,7 +116,6 @@ export const EcommerceCheckout: React.FC = () => {
       if (rpcError) throw rpcError;
 
       const result = data as unknown as { success: boolean; order?: OrderData & { product_image_url?: string }; payment?: PaymentData; error?: string };
-
       if (!result.success || !result.order) {
         setError(result.error || 'Pedido no encontrado');
         return;
@@ -466,7 +465,7 @@ export const EcommerceCheckout: React.FC = () => {
   // Error state
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <Package className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-2">Error</h1>
@@ -701,10 +700,10 @@ export const EcommerceCheckout: React.FC = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button 
-                    variant="outline"
-                    className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  <Button
+                    type="button"
                     onClick={goToPreviousStep}
+                    className="h-10 px-4 gap-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 shadow-sm"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Volver
@@ -815,11 +814,11 @@ export const EcommerceCheckout: React.FC = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  <Button
+                    type="button"
                     onClick={goToPreviousStep}
                     disabled={processing}
+                    className="h-10 px-4 gap-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 shadow-sm"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Volver
