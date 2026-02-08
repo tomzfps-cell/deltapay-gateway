@@ -190,21 +190,34 @@ export const EcommerceCheckout: React.FC = () => {
     const initMPCardForm = async () => {
       try {
         // Get public key
-        const response = await supabase.functions.invoke('get-mp-public-key');
-        if (response.error) throw response.error;
-        
-        const data = response.data as { success: boolean; public_key?: string };
-        if (!data.success || !data.public_key) {
-          console.error('MP_PUBLIC_KEY not available');
-          // Enable form anyway so user can see the issue
+        // Esperar a que los contenedores existan en el DOM
+        const requiredIds = [
+          'form-checkout__cardNumber',
+          'form-checkout__expirationDate',
+          'form-checkout__securityCode',
+          'form-checkout__cardholderName',
+          'form-checkout__issuer',
+          'form-checkout__installments',
+          'form-checkout__identificationType',
+          'form-checkout__identificationNumber',
+          'form-checkout__cardholderEmail',
+        ];
+        for (let i = 0; i < 20; i++) {
+          if (requiredIds.every(id => document.getElementById(id))) break;
+          await new Promise(res => setTimeout(res, 50));
+        }
+
+        // Get public key
+        // Forzar public key de test
+        const TEST_PUBLIC_KEY = 'TEST-031c70a1-fe57-4322-beb1-ca8f842e8f9d';
+        if (!window.MercadoPago) {
+          console.error('window.MercadoPago no está disponible');
           if (mounted) setMpReady(true);
           return;
         }
-
         // Initialize MP
-        const mp = new window.MercadoPago(data.public_key, { locale: 'es-AR' });
+        const mp = new window.MercadoPago(TEST_PUBLIC_KEY, { locale: 'es-AR' });
         mpInstanceRef.current = mp;
-
         // Create CardForm
         const cardForm = mp.cardForm({
           amount: String(order?.total_amount || 0),
@@ -229,7 +242,6 @@ export const EcommerceCheckout: React.FC = () => {
               } else {
                 console.log('CardForm mounted successfully');
               }
-              // Always enable form after mount callback (with or without error)
               if (mounted) setMpReady(true);
             },
             onSubmit: async (event: any) => {
@@ -241,10 +253,7 @@ export const EcommerceCheckout: React.FC = () => {
             },
           },
         });
-
         cardFormRef.current = cardForm;
-
-        // Fallback timer - if onFormMounted doesn't fire within 8 seconds, enable anyway
         fallbackTimer = setTimeout(() => {
           if (mounted && !mpReady) {
             console.warn('MP CardForm mount timeout - enabling form via fallback');
@@ -369,14 +378,19 @@ export const EcommerceCheckout: React.FC = () => {
 
     try {
       const cardFormData = cardFormRef.current.getCardFormData();
-      
+      console.log('[MP DEBUG] cardFormData:', cardFormData);
       if (!cardFormData.token) {
-        setPaymentError('Error al generar el token de tarjeta');
+        console.error('[MP DEBUG] CardFormData sin token:', cardFormData);
+        if (cardFormData.error) {
+          setPaymentError('Error al generar el token: ' + cardFormData.error);
+        } else {
+          setPaymentError('Error al generar el token de tarjeta');
+        }
         setProcessing(false);
         return;
       }
 
-      console.log('Card token generated:', cardFormData.token.substring(0, 10) + '...');
+      console.log('[MP DEBUG] Card token generated:', cardFormData.token.substring(0, 10) + '...');
 
       // Call our backend
       const response = await supabase.functions.invoke('mp-pay', {
@@ -405,7 +419,7 @@ export const EcommerceCheckout: React.FC = () => {
         error?: string;
       };
 
-      console.log('Payment result:', result);
+      console.log('[MP DEBUG] Payment result:', result);
 
       if (result.success && result.status === 'approved') {
         // Payment approved!
@@ -423,7 +437,7 @@ export const EcommerceCheckout: React.FC = () => {
         setPaymentError(getPaymentErrorMessage(result.status_detail || result.error || 'Error desconocido'));
       }
     } catch (err: any) {
-      console.error('Payment error:', err);
+      console.error('[MP DEBUG] Payment error:', err);
       setPaymentError(err.message || 'Error al procesar el pago');
     } finally {
       setProcessing(false);
