@@ -721,3 +721,61 @@
   border-color: #06B6D4;
   box-shadow: 0 0 0 2px rgba(6,182,212,.15);
 }
+
+/* =========================================
+   FIX FINAL - Mercado Pago inputs (NO iframe)
+   ========================================= */
+
+.checkout-light #form-checkout input#form-checkout__cardNumber,
+.checkout-light #form-checkout input#form-checkout__expirationDate,
+.checkout-light #form-checkout input#form-checkout__securityCode,
+.checkout-light #form-checkout input#form-checkout__cardholderName,
+.checkout-light #form-checkout input#form-checkout__identificationNumber,
+.checkout-light #form-checkout input#form-checkout__cardholderEmail {
+  display: block !important;
+  width: 100% !important;
+  height: 40px !important;
+  padding: 0 0.75rem !important;
+
+  background: #ffffff !important;
+  color: #111827 !important;
+
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+
+  box-sizing: border-box !important;
+  outline: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* placeholders */
+.checkout-light #form-checkout input#form-checkout__cardNumber::placeholder,
+.checkout-light #form-checkout input#form-checkout__expirationDate::placeholder,
+.checkout-light #form-checkout input#form-checkout__securityCode::placeholder,
+.checkout-light #form-checkout input#form-checkout__cardholderName::placeholder,
+.checkout-light #form-checkout input#form-checkout__identificationNumber::placeholder,
+.checkout-light #form-checkout input#form-checkout__cardholderEmail::placeholder {
+  color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+/* focus */
+.checkout-light #form-checkout input#form-checkout__cardNumber:focus,
+.checkout-light #form-checkout input#form-checkout__expirationDate:focus,
+.checkout-light #form-checkout input#form-checkout__securityCode:focus,
+.checkout-light #form-checkout input#form-checkout__cardholderName:focus,
+.checkout-light #form-checkout input#form-checkout__identificationNumber:focus,
+.checkout-light #form-checkout input#form-checkout__cardholderEmail:focus {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px rgba(6,182,212,.15) !important;
+}
+
+/* Autofill */
+.checkout-light #form-checkout input:-webkit-autofill,
+.checkout-light #form-checkout input:-webkit-autofill:hover,
+.checkout-light #form-checkout input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111827 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #fff inset !important;
+  caret-color: #06b6d4 !important;
+}

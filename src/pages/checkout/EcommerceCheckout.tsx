@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/i18n';
-import { 
-  Loader2, ArrowRight, ArrowLeft, Building2, Mail, Phone, 
-  MapPin, CreditCard, CheckCircle2, Package, User, Truck,
+import {
+  Loader2, ArrowRight, ArrowLeft, Building2, Mail, Phone,
+  MapPin, CreditCard, CheckCircle2, Package, Truck,
   ShieldCheck, Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -66,28 +66,28 @@ export const EcommerceCheckout: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<OrderData | null>(null);
   const [payment, setPayment] = useState<PaymentData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [currentStep, setCurrentStep] = useState<Step>('contact');
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  
+
   // MP SDK state
   const [mpReady, setMpReady] = useState(false);
   const cardFormRef = useRef<any>(null);
   const mpInstanceRef = useRef<any>(null);
-  
+
   // Forms
   const [contactForm, setContactForm] = useState<ContactForm>({
     email: '',
     phone: '',
   });
-  
+
   const [shippingForm, setShippingForm] = useState<ShippingForm>({
     name: '',
     lastname: '',
@@ -115,7 +115,13 @@ export const EcommerceCheckout: React.FC = () => {
 
       if (rpcError) throw rpcError;
 
-      const result = data as unknown as { success: boolean; order?: OrderData & { product_image_url?: string }; payment?: PaymentData; error?: string };
+      const result = data as unknown as {
+        success: boolean;
+        order?: OrderData & { product_image_url?: string };
+        payment?: PaymentData;
+        error?: string;
+      };
+
       if (!result.success || !result.order) {
         setError(result.error || 'Pedido no encontrado');
         return;
@@ -124,7 +130,7 @@ export const EcommerceCheckout: React.FC = () => {
       setOrder(result.order);
       setPayment(result.payment || null);
 
-      // Pre-fill forms with existing data
+      // Pre-fill forms
       if (result.order.customer_email || result.order.customer_phone) {
         setContactForm({
           email: result.order.customer_email || '',
@@ -143,7 +149,6 @@ export const EcommerceCheckout: React.FC = () => {
         });
       }
 
-      // If order is already paid, go to confirmation
       if (result.order.status === 'paid') {
         setCurrentStep('confirmation');
       }
@@ -155,7 +160,6 @@ export const EcommerceCheckout: React.FC = () => {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     if (orderId) {
       loadOrder(orderId);
@@ -165,122 +169,148 @@ export const EcommerceCheckout: React.FC = () => {
     }
   }, [orderId, loadOrder]);
 
-  // Load MP SDK
+  // ✅ MP: init CardForm only in payment step
   useEffect(() => {
-    if (currentStep !== 'payment' || mpReady) return;
+    if (currentStep !== 'payment') return;
+    if (!order) return;
 
     let mounted = true;
-    let fallbackTimer: NodeJS.Timeout | null = null;
 
-    const loadMPScript = async () => {
-      // Check if SDK already loaded
-      if (window.MercadoPago) {
-        await initMPCardForm();
-        return;
+    const ensureScript = async () => {
+      if (window.MercadoPago) return;
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://sdk.mercadopago.com/js/v2';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('No se pudo cargar el SDK de Mercado Pago'));
+        document.body.appendChild(script);
+      });
+    };
+
+    const waitForDom = async () => {
+      const requiredIds = [
+        'form-checkout',
+        'form-checkout__cardNumber',
+        'form-checkout__expirationDate',
+        'form-checkout__securityCode',
+        'form-checkout__cardholderName',
+        'form-checkout__issuer',
+        'form-checkout__installments',
+        'form-checkout__identificationType',
+        'form-checkout__identificationNumber',
+        'form-checkout__cardholderEmail',
+      ];
+
+      for (let i = 0; i < 80; i++) {
+        if (requiredIds.every(id => document.getElementById(id))) return;
+        await new Promise(res => setTimeout(res, 50));
       }
-
-      // Load SDK script
-      const script = document.createElement('script');
-      script.src = 'https://sdk.mercadopago.com/js/v2';
-      script.async = true;
-      script.onload = () => initMPCardForm();
-      document.body.appendChild(script);
+      throw new Error('DOM no listo para CardForm (ids no encontrados)');
     };
 
     const initMPCardForm = async () => {
       try {
-        // Get public key
-        // Esperar a que los contenedores existan en el DOM
-        const requiredIds = [
-          'form-checkout__cardNumber',
-          'form-checkout__expirationDate',
-          'form-checkout__securityCode',
-          'form-checkout__cardholderName',
-          'form-checkout__issuer',
-          'form-checkout__installments',
-          'form-checkout__identificationType',
-          'form-checkout__identificationNumber',
-          'form-checkout__cardholderEmail',
-        ];
-        for (let i = 0; i < 20; i++) {
-          if (requiredIds.every(id => document.getElementById(id))) break;
-          await new Promise(res => setTimeout(res, 50));
-        }
+        setMpReady(false);
+        setPaymentError(null);
 
-        // Get public key
-        // Forzar public key de test
+        await ensureScript();
+        await waitForDom();
+
+        if (!mounted) return;
+
         const TEST_PUBLIC_KEY = 'TEST-031c70a1-fe57-4322-beb1-ca8f842e8f9d';
-        if (!window.MercadoPago) {
-          console.error('window.MercadoPago no está disponible');
-          if (mounted) setMpReady(true);
-          return;
-        }
-        // Initialize MP
+
         const mp = new window.MercadoPago(TEST_PUBLIC_KEY, { locale: 'es-AR' });
         mpInstanceRef.current = mp;
-        // Create CardForm
+
+        // cleanup previous
+        try { cardFormRef.current?.unmount?.(); } catch {}
+        cardFormRef.current = null;
+
         const cardForm = mp.cardForm({
-          amount: String(order?.total_amount || 0),
-          iframe: true,
+          amount: String(order.total_amount || 0),
+          iframe: false,
           form: {
             id: 'form-checkout',
             cardNumber: { id: 'form-checkout__cardNumber', placeholder: 'Número de tarjeta' },
             expirationDate: { id: 'form-checkout__expirationDate', placeholder: 'MM/YY' },
             securityCode: { id: 'form-checkout__securityCode', placeholder: 'CVV' },
-            cardholderName: { id: 'form-checkout__cardholderName', placeholder: 'Nombre como aparece en la tarjeta' },
+            cardholderName: { id: 'form-checkout__cardholderName', placeholder: 'Nombre' },
             issuer: { id: 'form-checkout__issuer', placeholder: 'Banco emisor' },
             installments: { id: 'form-checkout__installments', placeholder: 'Cuotas' },
-            identificationType: { id: 'form-checkout__identificationType', placeholder: 'Tipo de documento' },
-            identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Número de documento' },
+            identificationType: { id: 'form-checkout__identificationType', placeholder: 'Tipo doc' },
+            identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Documento' },
             cardholderEmail: { id: 'form-checkout__cardholderEmail', placeholder: 'E-mail' },
           },
           callbacks: {
-            onFormMounted: (error: any) => {
-              if (fallbackTimer) clearTimeout(fallbackTimer);
-              if (error) {
-                console.error('CardForm mount error:', error);
-              } else {
-                console.log('CardForm mounted successfully');
+            onFormMounted: (err: any) => {
+              if (!mounted) return;
+              if (err) {
+                console.error('[MP] onFormMounted error:', err);
+                setPaymentError('Error inicializando Mercado Pago.');
+                return;
               }
-              if (mounted) setMpReady(true);
+              console.log('[MP] CardForm mounted OK');
+              setMpReady(true);
             },
+
             onSubmit: async (event: any) => {
               event.preventDefault();
-              await handlePaymentSubmit();
+              if (!cardFormRef.current) return;
+
+              // debug DOM values
+              const cn = (document.getElementById('form-checkout__cardNumber') as HTMLInputElement)?.value;
+              const ex = (document.getElementById('form-checkout__expirationDate') as HTMLInputElement)?.value;
+              const cv = (document.getElementById('form-checkout__securityCode') as HTMLInputElement)?.value;
+              console.log('[MP DEBUG] dom values:', { cn, ex, cv });
+
+              const data = cardFormRef.current?.getCardFormData?.();
+              console.log('[MP DEBUG] onSubmit data:', data);
+
+              const token = data?.token;
+              if (!token) {
+                setPaymentError('MP no pudo generar el token. Revisá los datos de tarjeta.');
+                return;
+              }
+
+              await handlePaymentWithToken(data);
             },
+
+            onError: (err: any) => {
+              console.error('[MP] onError:', err);
+              const msg =
+                err?.cause?.[0]?.message ||
+                err?.message ||
+                err?.cause?.[0]?.description ||
+                'Error de Mercado Pago';
+              setPaymentError(msg);
+            },
+
             onFetching: (resource: string) => {
-              console.log('Fetching resource:', resource);
+              console.log('[MP] fetching:', resource);
             },
           },
         });
-        cardFormRef.current = cardForm;
-        fallbackTimer = setTimeout(() => {
-          if (mounted && !mpReady) {
-            console.warn('MP CardForm mount timeout - enabling form via fallback');
-            setMpReady(true);
-          }
-        }, 8000);
 
-      } catch (err) {
-        console.error('Error initializing MP CardForm:', err);
-        if (mounted) setMpReady(true); // Enable form so user sees error state
+        cardFormRef.current = cardForm;
+      } catch (e) {
+        console.error('[MP] init error:', e);
+        if (mounted) setPaymentError('Error inicializando Mercado Pago.');
+        setMpReady(true);
       }
     };
 
-    loadMPScript();
+    initMPCardForm();
 
     return () => {
       mounted = false;
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-      if (cardFormRef.current) {
-        try {
-          cardFormRef.current.unmount();
-        } catch (e) {
-          // Ignore unmount errors
-        }
-      }
+      try { cardFormRef.current?.unmount?.(); } catch {}
+      cardFormRef.current = null;
+      mpInstanceRef.current = null;
+      setMpReady(false);
     };
-  }, [currentStep, order?.total_amount]);
+  }, [currentStep, order?.total_amount, order?.id]);
 
   // Save contact data
   const saveContactData = async () => {
@@ -298,7 +328,7 @@ export const EcommerceCheckout: React.FC = () => {
       });
 
       if (error) throw error;
-      
+
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
         toast({ title: result.error || 'Error al guardar', variant: 'destructive' });
@@ -336,7 +366,7 @@ export const EcommerceCheckout: React.FC = () => {
       });
 
       if (error) throw error;
-      
+
       const result = data as { success: boolean; error?: string };
       if (!result.success) {
         toast({ title: result.error || 'Error al guardar', variant: 'destructive' });
@@ -353,7 +383,6 @@ export const EcommerceCheckout: React.FC = () => {
     }
   };
 
-  // Handle step navigation
   const goToNextStep = async () => {
     if (currentStep === 'contact') {
       const saved = await saveContactData();
@@ -367,81 +396,6 @@ export const EcommerceCheckout: React.FC = () => {
   const goToPreviousStep = () => {
     if (currentStep === 'shipping') setCurrentStep('contact');
     else if (currentStep === 'payment') setCurrentStep('shipping');
-  };
-
-  // Handle payment submission
-  const handlePaymentSubmit = async () => {
-    if (!cardFormRef.current || processing) return;
-
-    setProcessing(true);
-    setPaymentError(null);
-
-    try {
-      const cardFormData = cardFormRef.current.getCardFormData();
-      console.log('[MP DEBUG] cardFormData:', cardFormData);
-      if (!cardFormData.token) {
-        console.error('[MP DEBUG] CardFormData sin token:', cardFormData);
-        if (cardFormData.error) {
-          setPaymentError('Error al generar el token: ' + cardFormData.error);
-        } else {
-          setPaymentError('Error al generar el token de tarjeta');
-        }
-        setProcessing(false);
-        return;
-      }
-
-      console.log('[MP DEBUG] Card token generated:', cardFormData.token.substring(0, 10) + '...');
-
-      // Call our backend
-      const response = await supabase.functions.invoke('mp-pay', {
-        body: {
-          order_id: orderId,
-          token: cardFormData.token,
-          payment_method_id: cardFormData.paymentMethodId,
-          issuer_id: cardFormData.issuerId,
-          installments: parseInt(cardFormData.installments) || 1,
-          payer: {
-            email: contactForm.email,
-            identification: cardFormData.identificationType && cardFormData.identificationNumber ? {
-              type: cardFormData.identificationType,
-              number: cardFormData.identificationNumber,
-            } : undefined,
-          },
-        },
-      });
-
-      if (response.error) throw response.error;
-
-      const result = response.data as { 
-        success: boolean; 
-        status?: string; 
-        status_detail?: string;
-        error?: string;
-      };
-
-      console.log('[MP DEBUG] Payment result:', result);
-
-      if (result.success && result.status === 'approved') {
-        // Payment approved!
-        setOrder(prev => prev ? { ...prev, status: 'paid' } : null);
-        setCurrentStep('confirmation');
-        toast({ title: '¡Pago aprobado!', description: 'Tu pedido fue confirmado' });
-      } else if (result.success && (result.status === 'in_process' || result.status === 'pending')) {
-        // Payment pending
-        toast({ 
-          title: 'Pago en proceso', 
-          description: 'Tu pago está siendo procesado. Te notificaremos cuando se confirme.' 
-        });
-      } else {
-        // Payment failed
-        setPaymentError(getPaymentErrorMessage(result.status_detail || result.error || 'Error desconocido'));
-      }
-    } catch (err: any) {
-      console.error('[MP DEBUG] Payment error:', err);
-      setPaymentError(err.message || 'Error al procesar el pago');
-    } finally {
-      setProcessing(false);
-    }
   };
 
   const getPaymentErrorMessage = (detail: string): string => {
@@ -462,6 +416,62 @@ export const EcommerceCheckout: React.FC = () => {
       'pending_review_manual': 'Pago en revisión',
     };
     return messages[detail] || detail;
+  };
+
+  // ✅ Paga usando token ya generado por MP en onSubmit
+  const handlePaymentWithToken = async (cardFormData: any) => {
+    if (processing) return;
+
+    setProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const response = await supabase.functions.invoke('mp-pay', {
+        body: {
+          order_id: orderId,
+          token: cardFormData.token,
+          payment_method_id: cardFormData.paymentMethodId,
+          issuer_id: cardFormData.issuerId,
+          installments: parseInt(cardFormData.installments) || 1,
+          payer: {
+            email: contactForm.email,
+            identification: cardFormData.identificationType && cardFormData.identificationNumber ? {
+              type: cardFormData.identificationType,
+              number: cardFormData.identificationNumber,
+            } : undefined,
+          },
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      const result = response.data as {
+        success: boolean;
+        status?: string;
+        status_detail?: string;
+        error?: string;
+      };
+
+      console.log('[MP DEBUG] Payment result:', result);
+
+      if (result.success && result.status === 'approved') {
+        setOrder(prev => prev ? { ...prev, status: 'paid' } : null);
+        setCurrentStep('confirmation');
+        toast({ title: '¡Pago aprobado!', description: 'Tu pedido fue confirmado' });
+      } else if (result.success && (result.status === 'in_process' || result.status === 'pending')) {
+        toast({
+          title: 'Pago en proceso',
+          description: 'Tu pago está siendo procesado. Te notificaremos cuando se confirme.',
+        });
+      } else {
+        setPaymentError(getPaymentErrorMessage(result.status_detail || result.error || 'Error desconocido'));
+      }
+    } catch (err: any) {
+      console.error('[MP DEBUG] Payment error:', err);
+      setPaymentError(err?.message || 'Error al procesar el pago');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   // Loading state
@@ -489,7 +499,7 @@ export const EcommerceCheckout: React.FC = () => {
     );
   }
 
-  // Confirmation step
+  // Confirmation
   if (currentStep === 'confirmation' || order.status === 'paid') {
     return (
       <div className="min-h-screen checkout-light flex items-center justify-center p-4">
@@ -502,7 +512,7 @@ export const EcommerceCheckout: React.FC = () => {
           <p className="text-gray-600 mb-6">
             Tu pedido de {order.product_name} fue procesado correctamente.
           </p>
-          
+
           <div className="bg-gray-50 rounded-lg p-4 text-left space-y-3 mb-6 border border-gray-200">
             <div className="flex justify-between">
               <span className="text-gray-500">Producto</span>
@@ -524,7 +534,7 @@ export const EcommerceCheckout: React.FC = () => {
             </div>
           </div>
 
-          <Button 
+          <Button
             className="w-full gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg"
             onClick={() => navigate(`/order/${orderId}/thanks`)}
           >
@@ -553,18 +563,15 @@ export const EcommerceCheckout: React.FC = () => {
             const Icon = step.icon;
             const isActive = step.id === currentStep;
             const isCompleted = index < currentStepIndex;
-            
+
             return (
               <React.Fragment key={step.id}>
-                <div className={cn(
-                  "flex flex-col items-center",
-                  isActive && "scale-110"
-                )}>
+                <div className={cn("flex flex-col items-center", isActive && "scale-110")}>
                   <div className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center transition-all",
                     isCompleted ? "bg-cyan-500 text-white" :
-                    isActive ? "bg-cyan-100 text-cyan-600 ring-2 ring-cyan-500" :
-                    "bg-gray-100 text-gray-400"
+                      isActive ? "bg-cyan-100 text-cyan-600 ring-2 ring-cyan-500" :
+                        "bg-gray-100 text-gray-400"
                   )}>
                     {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                   </div>
@@ -596,7 +603,7 @@ export const EcommerceCheckout: React.FC = () => {
                   <Mail className="h-5 w-5 text-cyan-600" />
                   <h2 className="text-lg font-semibold text-gray-900">Datos de contacto</h2>
                 </div>
-                
+
                 <div className="grid gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-gray-700">Email *</Label>
@@ -609,7 +616,7 @@ export const EcommerceCheckout: React.FC = () => {
                       className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-gray-700">Teléfono *</Label>
                     <Input
@@ -623,7 +630,7 @@ export const EcommerceCheckout: React.FC = () => {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   className="w-full gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-md"
                   onClick={goToNextStep}
                   disabled={saving}
@@ -642,7 +649,7 @@ export const EcommerceCheckout: React.FC = () => {
                   <Truck className="h-5 w-5 text-cyan-600" />
                   <h2 className="text-lg font-semibold text-gray-900">Dirección de envío</h2>
                 </div>
-                
+
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -666,7 +673,7 @@ export const EcommerceCheckout: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-gray-700">Dirección *</Label>
                     <Input
@@ -677,7 +684,7 @@ export const EcommerceCheckout: React.FC = () => {
                       className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-cyan-500 focus:ring-cyan-500"
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city" className="text-gray-700">Ciudad *</Label>
@@ -700,7 +707,7 @@ export const EcommerceCheckout: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="postal_code" className="text-gray-700">Código Postal *</Label>
                     <Input
@@ -722,7 +729,7 @@ export const EcommerceCheckout: React.FC = () => {
                     <ArrowLeft className="h-4 w-4" />
                     Volver
                   </Button>
-                  <Button 
+                  <Button
                     className="flex-1 gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-md"
                     onClick={goToNextStep}
                     disabled={saving}
@@ -757,74 +764,100 @@ export const EcommerceCheckout: React.FC = () => {
                     </div>
                   )}
 
-                <form id="form-checkout" className="space-y-4 checkout-form-light">
-                  <div className="space-y-2">
-                    <Label>Número de tarjeta</Label>
-                    <div id="form-checkout__cardNumber" className="mp-input-wrapper-light" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <form id="form-checkout" className="space-y-4 checkout-form-light">
                     <div className="space-y-2">
-                      <Label>Vencimiento</Label>
-                      <div id="form-checkout__expirationDate" className="mp-input-wrapper-light" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>CVV</Label>
-                      <div id="form-checkout__securityCode" className="mp-input-wrapper-light" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Nombre en la tarjeta</Label>
-                    <input
-                      id="form-checkout__cardholderName"
-                      name="cardholderName"
-                      type="text"
-                      placeholder="Nombre como aparece en la tarjeta"
-                      autoComplete="cc-name"
-                      className="mp-input-native-light"
-                    />
-                  </div>
-
-                  <div className="mp-issuer-hidden">
-                    <select id="form-checkout__issuer" aria-hidden="true" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Cuotas</Label>
-                    <select id="form-checkout__installments" className="mp-select-light" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Tipo de documento</Label>
-                      <select id="form-checkout__identificationType" className="mp-select-light" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Número de documento</Label>
+                      <Label>Número de tarjeta</Label>
                       <input
-                        id="form-checkout__identificationNumber"
-                        name="identificationNumber"
+                        id="form-checkout__cardNumber"
+                        name="cardNumber"
                         type="text"
-                        placeholder="Número de documento"
                         inputMode="numeric"
+                        placeholder="Número de tarjeta"
+                        autoComplete="cc-number"
                         className="mp-input-native-light"
                       />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <input
-                      id="form-checkout__cardholderEmail"
-                      name="cardholderEmail"
-                      type="email"
-                      placeholder="E-mail"
-                      autoComplete="email"
-                      className="mp-input-native-light"
-                    />
-                  </div>
-                </form>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Vencimiento</Label>
+                        <input
+                          id="form-checkout__expirationDate"
+                          name="expirationDate"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="MM/YY"
+                          autoComplete="cc-exp"
+                          className="mp-input-native-light"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CVV</Label>
+                        <input
+                          id="form-checkout__securityCode"
+                          name="securityCode"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="CVV"
+                          autoComplete="cc-csc"
+                          className="mp-input-native-light"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nombre en la tarjeta</Label>
+                      <input
+                        id="form-checkout__cardholderName"
+                        name="cardholderName"
+                        type="text"
+                        placeholder="Nombre como aparece en la tarjeta"
+                        autoComplete="cc-name"
+                        className="mp-input-native-light"
+                      />
+                    </div>
+
+                    {/* issuer requerido por MP aunque lo ocultes */}
+                    <div className="mp-issuer-hidden">
+                      <select id="form-checkout__issuer" name="issuer" aria-hidden="true" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Cuotas</Label>
+                      <select id="form-checkout__installments" name="installments" className="mp-select-light" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Tipo de documento</Label>
+                        <select id="form-checkout__identificationType" name="identificationType" className="mp-select-light" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Número de documento</Label>
+                        <input
+                          id="form-checkout__identificationNumber"
+                          name="identificationNumber"
+                          type="text"
+                          placeholder="Número de documento"
+                          inputMode="numeric"
+                          className="mp-input-native-light"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <input
+                        id="form-checkout__cardholderEmail"
+                        name="cardholderEmail"
+                        type="email"
+                        placeholder="E-mail"
+                        autoComplete="email"
+                        className="mp-input-native-light"
+                        defaultValue={contactForm.email}
+                      />
+                    </div>
+                  </form>
                 </div>
 
                 <div className="flex gap-3">
@@ -837,15 +870,13 @@ export const EcommerceCheckout: React.FC = () => {
                     <ArrowLeft className="h-4 w-4" />
                     Volver
                   </Button>
-                  <Button 
+
+                  {/* ✅ IMPORTANTE: NO onClick. El submit dispara onSubmit del CardForm */}
+                  <Button
                     type="submit"
                     form="form-checkout"
                     className="flex-1 gap-2 bg-cyan-500 hover:bg-cyan-600 text-white shadow-md"
                     disabled={!mpReady || processing}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePaymentSubmit();
-                    }}
                   >
                     {processing ? (
                       <>
@@ -869,16 +900,15 @@ export const EcommerceCheckout: React.FC = () => {
             )}
           </div>
 
-          {/* Order summary sidebar */}
+          {/* Sidebar */}
           <div className="lg:sticky lg:top-8 h-fit">
             <div className="bg-white rounded-xl p-6 space-y-4 shadow-sm border border-gray-200">
               <h3 className="font-semibold text-gray-900">Resumen del pedido</h3>
-              
-              {/* Product image */}
+
               {order.product_image_url && (
                 <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
-                  <img 
-                    src={order.product_image_url} 
+                  <img
+                    src={order.product_image_url}
                     alt={order.product_name}
                     className="w-full h-full object-cover"
                   />
@@ -890,17 +920,17 @@ export const EcommerceCheckout: React.FC = () => {
                   <span className="text-gray-500">{order.product_name}</span>
                   <span className="text-gray-900">{formatCurrency(order.product_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-gray-500">Envío</span>
                   <span className="text-gray-900">
-                    {order.shipping_cost > 0 
+                    {order.shipping_cost > 0
                       ? formatCurrency(order.shipping_cost, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')
                       : 'Gratis'
                     }
                   </span>
                 </div>
-                
+
                 <div className="border-t border-gray-200 pt-3 flex justify-between">
                   <span className="font-semibold text-gray-900">Total</span>
                   <span className="text-xl font-bold text-gray-900">
@@ -909,7 +939,6 @@ export const EcommerceCheckout: React.FC = () => {
                 </div>
               </div>
 
-              {/* Shipping preview */}
               {(currentStep === 'shipping' || currentStep === 'payment') && shippingForm.address && (
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-start gap-2 text-sm">
@@ -925,7 +954,6 @@ export const EcommerceCheckout: React.FC = () => {
                 </div>
               )}
 
-              {/* Contact preview */}
               {currentStep === 'payment' && contactForm.email && (
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center gap-2 text-sm">
