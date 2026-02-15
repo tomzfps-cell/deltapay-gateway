@@ -37,6 +37,7 @@ const productSchema = z.object({
   currency: z.enum(['ARS', 'BRL', 'USD']),
   slug: z.string().min(1, 'Slug requerido').max(50).regex(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones'),
   redirect_url: z.string().url('URL inválida').startsWith('https://', 'Debe usar HTTPS').optional().or(z.literal('')),
+  image_url: z.string().url('URL inválida').optional().or(z.literal('')),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -49,6 +50,7 @@ interface Product {
   currency: 'ARS' | 'BRL' | 'USD';
   slug: string | null;
   redirect_url: string | null;
+  image_url: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -73,6 +75,7 @@ export const Products: React.FC = () => {
     currency: 'ARS',
     slug: '',
     redirect_url: '',
+    image_url: '',
   });
 
   const openCreateDialog = () => {
@@ -84,6 +87,7 @@ export const Products: React.FC = () => {
       currency: 'ARS',
       slug: '',
       redirect_url: '',
+      image_url: '',
     });
     setErrors({});
     setIsDialogOpen(true);
@@ -98,6 +102,7 @@ export const Products: React.FC = () => {
       currency: product.currency,
       slug: product.slug || '',
       redirect_url: product.redirect_url || '',
+      image_url: product.image_url || '',
     });
     setErrors({});
     setIsDialogOpen(true);
@@ -151,6 +156,7 @@ export const Products: React.FC = () => {
         currency: formData.currency,
         slug: formData.slug,
         redirect_url: formData.redirect_url || null,
+        image_url: formData.image_url || null,
       };
 
       if (editingProduct) {
@@ -442,6 +448,21 @@ export const Products: React.FC = () => {
                 />
               </div>
               {errors.slug && <p className="text-sm text-destructive">{errors.slug}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image_url">URL de imagen (opcional)</Label>
+              <Input
+                id="image_url"
+                value={formData.image_url}
+                onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
+                placeholder="https://ejemplo.com/imagen.jpg"
+                className="input-field"
+              />
+              <p className="text-xs text-muted-foreground">
+                Imagen del producto que se mostrará en la landing y checkout
+              </p>
+              {errors.image_url && <p className="text-sm text-destructive">{errors.image_url}</p>}
             </div>
 
             <div className="space-y-2">

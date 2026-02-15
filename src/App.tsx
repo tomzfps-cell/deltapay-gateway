@@ -27,6 +27,7 @@ import Checkout from "./pages/checkout/Checkout";
 import EcommerceCheckout from "./pages/checkout/EcommerceCheckout";
 import OrderThanks from "./pages/checkout/OrderThanks";
 import ProductLanding from "./pages/checkout/ProductLanding";
+import AdminOrders from "./pages/AdminOrders";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/p/:productSlug" element={<ProductLanding />} />
               <Route path="/checkout/:orderId" element={<EcommerceCheckout />} />
               <Route path="/order/:orderId/thanks" element={<OrderThanks />} />
+              <Route path="/admin" element={<AdminOrders />} />
 
               {/* Protected dashboard routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -41,6 +41,7 @@ export const ProductLanding: React.FC = () => {
           description,
           price,
           currency,
+          image_url,
           merchant:merchants!products_merchant_id_fkey(business_name)
         `)
         .eq('slug', slug)
