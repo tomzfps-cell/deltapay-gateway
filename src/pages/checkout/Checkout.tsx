@@ -287,7 +287,7 @@ export const Checkout: React.FC = () => {
   // Customer form view
   if (showCustomerForm && !payment) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="glass rounded-2xl p-8 space-y-6">
             <div className="text-center space-y-2">
@@ -361,7 +361,7 @@ export const Checkout: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="checkout-light min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Cargando pago...</p>
@@ -373,7 +373,7 @@ export const Checkout: React.FC = () => {
   // Error state
   if (error || !payment) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-2">Error</h1>
@@ -404,7 +404,7 @@ export const Checkout: React.FC = () => {
   // Confirmed state
   if (payment.status === 'confirmed') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
@@ -456,7 +456,7 @@ export const Checkout: React.FC = () => {
 
   // Pending payment - Main checkout view with Wallet Brick
   return (
-    <div className="min-h-screen bg-background">
+    <div className="checkout-light min-h-screen">
       <div className="max-w-2xl mx-auto p-4 py-8 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">

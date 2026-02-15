@@ -68,7 +68,7 @@ export const OrderThanks: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="checkout-light min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Cargando pedido...</p>
@@ -92,7 +92,7 @@ export const OrderThanks: React.FC = () => {
   const isPaid = order.status === 'paid';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="checkout-light min-h-screen">
       <div className="max-w-2xl mx-auto p-4 py-8 space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
