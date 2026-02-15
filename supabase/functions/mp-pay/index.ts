@@ -21,6 +21,28 @@ interface PayRequest {
   };
 }
 
+// ── Dynamic FX Rate ───────────────────────────────────────────────
+async function fetchDynamicFxRate(): Promise<number> {
+  try {
+    const response = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=ars"
+    );
+    if (response.ok) {
+      const data = await response.json();
+      const arsPerUsdt = data?.tether?.ars;
+      if (arsPerUsdt && arsPerUsdt > 0) {
+        const rate = 1 / arsPerUsdt;
+        console.log(`Dynamic FX rate: 1 ARS = ${rate} USDT (${arsPerUsdt} ARS/USDT)`);
+        return rate;
+      }
+    }
+    console.warn("FX API response invalid, using fallback");
+  } catch (err) {
+    console.warn("Failed to fetch dynamic FX rate:", err);
+  }
+  return 0.0008;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -155,11 +177,27 @@ Deno.serve(async (req) => {
       raw_payload: mpResult,
     });
 
+    // Amount validation: compare MP response against order total
+    if (mpResponse.ok && mpResult.transaction_amount !== undefined) {
+      const expectedAmount = Number(order.total_amount);
+      const receivedAmount = Number(mpResult.transaction_amount);
+      if (Math.abs(expectedAmount - receivedAmount) > 0.01) {
+        console.error(`Amount mismatch! Expected: ${expectedAmount}, Received: ${receivedAmount}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Payment amount mismatch",
+            status: "rejected",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Handle MP response
     if (!mpResponse.ok) {
       console.error("MP payment failed:", mpResult);
       
-      // Update payment status to failed
       if (payment?.id) {
         await supabase
           .from("payments")
@@ -197,8 +235,8 @@ Deno.serve(async (req) => {
     if (mpResult.status === "approved") {
       console.log("Payment approved, confirming order...");
       
-      // FX rate - in production this would come from an external source
-      const fxRate = 0.0008; // ~1250 ARS per USDT
+      // Dynamic FX rate
+      const fxRate = await fetchDynamicFxRate();
       
       const { data: confirmResult, error: confirmError } = await supabase
         .rpc("confirm_order_payment", {

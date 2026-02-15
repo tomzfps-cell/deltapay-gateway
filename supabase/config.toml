@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.mp-pay]
 verify_jwt = false
+
+[functions.expire-orders]
+verify_jwt = false
