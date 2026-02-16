@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMerchantProducts } from '@/hooks/useMerchantData';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/i18n';
-import { Plus, MoreVertical, Copy, ExternalLink, Check, Loader2, Pencil, Power, PowerOff } from 'lucide-react';
+import { Plus, MoreVertical, Copy, ExternalLink, Check, Loader2, Pencil, Power, PowerOff, Upload, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,10 +37,9 @@ const productSchema = z.object({
   currency: z.enum(['ARS', 'BRL', 'USD']),
   slug: z.string().min(1, 'Slug requerido').max(50).regex(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones'),
   redirect_url: z.string().url('URL inválida').startsWith('https://', 'Debe usar HTTPS').optional().or(z.literal('')),
-  image_url: z.string().url('URL inválida').optional().or(z.literal('')),
 });
 
-type ProductFormData = z.infer<typeof productSchema>;
+type ProductFormData = z.infer<typeof productSchema> & { image_url: string };
 
 interface Product {
   id: string;
@@ -61,12 +60,15 @@ export const Products: React.FC = () => {
   const { data: products, isLoading } = useMerchantProducts();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -80,15 +82,8 @@ export const Products: React.FC = () => {
 
   const openCreateDialog = () => {
     setEditingProduct(null);
-    setFormData({
-      name: '',
-      description: '',
-      price: 0,
-      currency: 'ARS',
-      slug: '',
-      redirect_url: '',
-      image_url: '',
-    });
+    setFormData({ name: '', description: '', price: 0, currency: 'ARS', slug: '', redirect_url: '', image_url: '' });
+    setImagePreview(null);
     setErrors({});
     setIsDialogOpen(true);
   };
@@ -104,6 +99,7 @@ export const Products: React.FC = () => {
       redirect_url: product.redirect_url || '',
       image_url: product.image_url || '',
     });
+    setImagePreview(product.image_url || null);
     setErrors({});
     setIsDialogOpen(true);
   };
@@ -124,6 +120,49 @@ export const Products: React.FC = () => {
       name,
       slug: prev.slug === '' || prev.slug === generateSlug(prev.name) ? generateSlug(name) : prev.slug,
     }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !merchant?.id) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Solo se permiten imágenes', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'La imagen no debe superar 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${merchant.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setFormData((prev) => ({ ...prev, image_url: publicUrl }));
+      setImagePreview(publicUrl);
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      toast({ title: 'Error al subir la imagen', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSave = async () => {
@@ -166,8 +205,7 @@ export const Products: React.FC = () => {
           .eq('id', editingProduct.id);
 
         if (error) throw error;
-
-        toast({ title: 'Producto actualizado' });
+        toast({ title: t('productUpdated') });
       } else {
         const { error } = await supabase
           .from('products')
@@ -175,25 +213,20 @@ export const Products: React.FC = () => {
 
         if (error) {
           if (error.code === '23505') {
-            setErrors({ slug: 'Este slug ya está en uso' });
+            setErrors({ slug: t('slugInUse') });
             setIsSaving(false);
             return;
           }
           throw error;
         }
-
-        toast({ title: 'Producto creado' });
+        toast({ title: t('productCreated') });
       }
 
       queryClient.invalidateQueries({ queryKey: ['merchant-products'] });
       setIsDialogOpen(false);
     } catch (err: any) {
       console.error('Error saving product:', err);
-      toast({
-        title: 'Error',
-        description: err.message || 'No se pudo guardar el producto',
-        variant: 'destructive',
-      });
+      toast({ title: t('error'), description: err.message, variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
@@ -207,18 +240,10 @@ export const Products: React.FC = () => {
         .eq('id', product.id);
 
       if (error) throw error;
-
-      toast({
-        title: product.is_active ? 'Producto desactivado' : 'Producto activado',
-      });
-
+      toast({ title: product.is_active ? t('productDeactivated') : t('productActivated') });
       queryClient.invalidateQueries({ queryKey: ['merchant-products'] });
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err.message,
-        variant: 'destructive',
-      });
+      toast({ title: t('error'), description: err.message, variant: 'destructive' });
     }
   };
 
@@ -227,7 +252,7 @@ export const Products: React.FC = () => {
     navigator.clipboard.writeText(url);
     setCopiedId(product.id);
     setTimeout(() => setCopiedId(null), 2000);
-    toast({ title: 'Link copiado' });
+    toast({ title: t('linkCopied') });
   };
 
   return (
@@ -236,9 +261,7 @@ export const Products: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t('products')}</h1>
-          <p className="text-muted-foreground">
-            Crea y gestiona tus productos y links de pago
-          </p>
+          <p className="text-muted-foreground">{t('manageProducts')}</p>
         </div>
         <Button className="gap-2 btn-primary-glow" onClick={openCreateDialog}>
           <Plus className="h-4 w-4" />
@@ -255,104 +278,84 @@ export const Products: React.FC = () => {
         </div>
       ) : products?.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center">
-          <p className="text-muted-foreground mb-4">No tienes productos aún</p>
-          <Button onClick={openCreateDialog}>Crear tu primer producto</Button>
+          <p className="text-muted-foreground mb-4">{t('noProducts')}</p>
+          <Button onClick={openCreateDialog}>{t('createFirstProduct')}</Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(products as Product[])?.map((product) => (
-            <div
-              key={product.id}
-              className="glass rounded-xl p-6 transition-all hover:border-primary/30"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">{product.name}</h3>
-                    {!product.is_active && (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        Inactivo
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                    {product.description || 'Sin descripción'}
-                  </p>
+            <div key={product.id} className="glass rounded-xl overflow-hidden transition-all hover:border-primary/30">
+              {/* Product image */}
+              {product.image_url ? (
+                <div className="aspect-video bg-muted">
+                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="glass-strong">
-                    <DropdownMenuItem
-                      className="gap-2"
-                      onClick={() => copyLink(product)}
-                      disabled={!product.slug}
-                    >
-                      {copiedId === product.id ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                      Copiar link
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="gap-2"
-                      asChild
-                      disabled={!product.slug || !product.is_active}
-                    >
-                      <a
-                        href={`/p/${product.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Abrir checkout
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="gap-2"
-                      onClick={() => openEditDialog(product)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="gap-2"
-                      onClick={() => toggleActive(product)}
-                    >
-                      {product.is_active ? (
-                        <>
-                          <PowerOff className="h-4 w-4" />
-                          Desactivar
-                        </>
-                      ) : (
-                        <>
-                          <Power className="h-4 w-4" />
-                          Activar
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="stat-value text-2xl">
-                  {formatCurrency(product.price, product.currency, locale)}
-                </span>
-              </div>
-
-              {product.slug && (
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground font-mono truncate">
-                    /p/{product.slug}
-                  </p>
+              ) : (
+                <div className="aspect-video bg-muted/30 flex items-center justify-center">
+                  <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
                 </div>
               )}
+              
+              <div className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{product.name}</h3>
+                      {!product.is_active && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          {t('inactive')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                      {product.description || t('noDescription')}
+                    </p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="glass-strong">
+                      <DropdownMenuItem className="gap-2" onClick={() => copyLink(product)} disabled={!product.slug}>
+                        {copiedId === product.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {t('copyLink')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="gap-2" asChild disabled={!product.slug || !product.is_active}>
+                        <a href={`/p/${product.slug}`} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                          {t('openCheckout')}
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="gap-2" onClick={() => openEditDialog(product)}>
+                        <Pencil className="h-4 w-4" />
+                        {t('edit')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="gap-2" onClick={() => toggleActive(product)}>
+                        {product.is_active ? (
+                          <><PowerOff className="h-4 w-4" />{t('deactivate')}</>
+                        ) : (
+                          <><Power className="h-4 w-4" />{t('activate')}</>
+                        )}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="stat-value text-2xl">
+                    {formatCurrency(product.price, product.currency, locale)}
+                  </span>
+                </div>
+
+                {product.slug && (
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground font-mono truncate">/p/{product.slug}</p>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -362,19 +365,15 @@ export const Products: React.FC = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="glass-strong sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
-            </DialogTitle>
+            <DialogTitle>{editingProduct ? t('editProduct') : t('newProduct')}</DialogTitle>
             <DialogDescription>
-              {editingProduct
-                ? 'Modifica los datos del producto'
-                : 'Crea un nuevo producto con link de pago'}
+              {editingProduct ? t('modifyProductData') : t('createProductWithLink')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre *</Label>
+              <Label htmlFor="name">{t('nameRequired')} *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -387,7 +386,7 @@ export const Products: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
+              <Label htmlFor="description">{t('descriptionOptional')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -397,12 +396,11 @@ export const Products: React.FC = () => {
                 maxLength={500}
                 rows={3}
               />
-              {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Precio *</Label>
+                <Label htmlFor="price">{t('priceLabel')} *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -417,7 +415,7 @@ export const Products: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="currency">Moneda *</Label>
+                <Label htmlFor="currency">{t('currencyLabel')} *</Label>
                 <Select
                   value={formData.currency}
                   onValueChange={(v) => setFormData((prev) => ({ ...prev, currency: v as 'ARS' | 'BRL' | 'USD' }))}
@@ -435,7 +433,7 @@ export const Products: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug (URL) *</Label>
+              <Label htmlFor="slug">{t('slugLabel')} *</Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">/p/</span>
                 <Input
@@ -450,23 +448,55 @@ export const Products: React.FC = () => {
               {errors.slug && <p className="text-sm text-destructive">{errors.slug}</p>}
             </div>
 
+            {/* Image upload */}
             <div className="space-y-2">
-              <Label htmlFor="image_url">URL de imagen (opcional)</Label>
-              <Input
-                id="image_url"
-                value={formData.image_url}
-                onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
-                placeholder="https://ejemplo.com/imagen.jpg"
-                className="input-field"
+              <Label>{t('imageLabel')}</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
               />
-              <p className="text-xs text-muted-foreground">
-                Imagen del producto que se mostrará en la landing y checkout
-              </p>
-              {errors.image_url && <p className="text-sm text-destructive">{errors.image_url}</p>}
+              {imagePreview ? (
+                <div className="space-y-2">
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted border border-border">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={isUploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {isUploading ? t('uploading') : t('changeImage')}
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="w-full aspect-video rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8" />
+                      <span className="text-sm">{t('selectImage')}</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <p className="text-xs text-muted-foreground">{t('imageHint')}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="redirect_url">URL de redirección (opcional)</Label>
+              <Label htmlFor="redirect_url">{t('redirectUrlLabel')}</Label>
               <Input
                 id="redirect_url"
                 value={formData.redirect_url}
@@ -474,25 +504,23 @@ export const Products: React.FC = () => {
                 placeholder="https://tudominio.com/gracias"
                 className="input-field"
               />
-              <p className="text-xs text-muted-foreground">
-                Después del pago, el cliente será redirigido aquí
-              </p>
+              <p className="text-xs text-muted-foreground">{t('redirectUrlHint')}</p>
               {errors.redirect_url && <p className="text-sm text-destructive">{errors.redirect_url}</p>}
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
+              {t('cancel')}
             </Button>
             <Button onClick={handleSave} disabled={isSaving} className="btn-primary-glow">
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Guardando...
+                  {t('saving')}
                 </>
               ) : (
-                'Guardar'
+                t('save')
               )}
             </Button>
           </DialogFooter>

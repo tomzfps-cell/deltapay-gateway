@@ -5,12 +5,15 @@ import { Database } from '@/integrations/supabase/types';
 
 type Merchant = Database['public']['Tables']['merchants']['Row'];
 type MerchantSettings = Database['public']['Tables']['merchant_settings']['Row'];
+type AppRole = Database['public']['Enums']['app_role'];
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   merchant: Merchant | null;
   settings: MerchantSettings | null;
+  userRole: AppRole | null;
+  isAdmin: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, businessName: string, country: string) => Promise<{ error: Error | null }>;
@@ -25,10 +28,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [settings, setSettings] = useState<MerchantSettings | null>(null);
+  const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isAdmin = userRole === 'admin';
 
   const fetchMerchantData = useCallback(async (userId: string) => {
     try {
+      // Fetch user role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .limit(1)
+        .maybeSingle();
+
+      if (roleData) {
+        setUserRole(roleData.role);
+      }
+
       // Fetch merchant where user_id matches
       const { data: merchantData, error: merchantError } = await supabase
         .from('merchants')
@@ -67,12 +85,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, fetchMerchantData]);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
-      // Defer Supabase calls with setTimeout to prevent deadlocks
       if (newSession?.user) {
         setTimeout(() => {
           fetchMerchantData(newSession.user.id);
@@ -80,10 +96,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setMerchant(null);
         setSettings(null);
+        setUserRole(null);
       }
     });
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
@@ -124,7 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: error as Error };
     }
 
-    // If user was created and confirmed (or auto-confirm is on), create merchant
     if (data.user && data.session) {
       const { error: merchantError } = await supabase.rpc('create_merchant_for_user', {
         _user_id: data.user.id,
@@ -148,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setMerchant(null);
     setSettings(null);
+    setUserRole(null);
   };
 
   return (
@@ -157,6 +173,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         merchant,
         settings,
+        userRole,
+        isAdmin,
         isLoading,
         signIn,
         signUp,
