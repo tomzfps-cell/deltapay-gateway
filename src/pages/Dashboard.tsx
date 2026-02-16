@@ -5,7 +5,7 @@ import { useMerchantBalance, useDashboardStats, useMerchantPayments } from '@/ho
 import { formatCurrency, formatUSDT, formatRelativeTime } from '@/lib/i18n';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { SalesChart } from '@/components/dashboard/SalesChart';
-import { Wallet, TrendingUp, Clock, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Wallet, TrendingUp, Clock, BarChart3, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -35,7 +35,7 @@ export const Dashboard: React.FC = () => {
           {t('welcomeBack')}, <span className="text-gradient">{businessName}</span>
         </h1>
         <p className="text-muted-foreground">
-          Resumen de tu actividad en DeltaPay
+          {t('summaryActivity')}
         </p>
       </div>
 
@@ -64,7 +64,7 @@ export const Dashboard: React.FC = () => {
           trend="neutral"
         />
         <MetricCard
-          title="Ventas (30d)"
+          title={t('sales30d')}
           value={statsLoading ? '...' : formatUSDT(stats?.monthSales || 0)}
           icon={BarChart3}
           trend="up"
@@ -77,7 +77,7 @@ export const Dashboard: React.FC = () => {
           <SalesChart data={stats?.dailySalesChart} isLoading={statsLoading} />
         </div>
         <div className="glass rounded-xl p-6">
-          <h3 className="mb-4 text-lg font-semibold">Balance USDT</h3>
+          <h3 className="mb-4 text-lg font-semibold">{t('balanceUSDT')}</h3>
           <div className="space-y-4">
             <div className="text-center py-6">
               {balanceLoading ? (
@@ -88,27 +88,27 @@ export const Dashboard: React.FC = () => {
                     {formatUSDT(balance?.balance_available || 0)}
                   </p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Disponible para retiro
+                    {t('availableForWithdrawal')}
                   </p>
                 </>
               )}
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pendiente</span>
+                <span className="text-muted-foreground">{t('pendingBalance')}</span>
                 <span className="font-mono">
                   {balanceLoading ? '...' : formatUSDT(balance?.balance_pending || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total</span>
+                <span className="text-muted-foreground">{t('totalBalanceLabel')}</span>
                 <span className="font-mono">
                   {balanceLoading ? '...' : formatUSDT(balance?.balance_total || 0)}
                 </span>
               </div>
             </div>
             <button className="btn-primary-glow mt-4 w-full rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-all hover:bg-primary/90">
-              Solicitar Retiro
+              {t('requestWithdrawalAction')}
             </button>
           </div>
         </div>
@@ -132,12 +132,11 @@ export const Dashboard: React.FC = () => {
             ))
           ) : recentPayments?.length === 0 ? (
             <div className="px-6 py-8 text-center text-muted-foreground">
-              No hay transacciones recientes
+              {t('noRecentTransactions')}
             </div>
           ) : (
             recentPayments?.map((tx) => {
               const status = statusConfig[tx.status as keyof typeof statusConfig] || statusConfig.pending;
-              const isPayment = true;
 
               return (
                 <div

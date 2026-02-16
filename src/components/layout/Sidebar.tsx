@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   CreditCard,
@@ -11,11 +12,13 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { key: 'dashboard', path: '/', icon: LayoutDashboard },
+const merchantNavItems = [
+  { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
   { key: 'payments', path: '/payments', icon: CreditCard },
   { key: 'products', path: '/products', icon: Package },
   { key: 'withdrawals', path: '/withdrawals', icon: Wallet },
@@ -24,9 +27,38 @@ const navItems = [
   { key: 'settings', path: '/settings', icon: Settings },
 ] as const;
 
+const adminNavItems = [
+  { key: 'adminDashboard', path: '/admin', icon: ShieldCheck },
+  { key: 'adminOrders', path: '/admin/orders', icon: ClipboardList },
+] as const;
+
 export const Sidebar: React.FC = () => {
   const { t, sidebarOpen, setSidebarOpen } = useApp();
+  const { isAdmin } = useAuth();
   const location = useLocation();
+
+  const renderNavItem = (item: { key: string; path: string; icon: React.ElementType }) => {
+    const isActive = location.pathname === item.path ||
+      (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+
+    return (
+      <NavLink
+        key={item.key}
+        to={item.path}
+        className={cn(
+          'nav-item',
+          isActive && 'nav-item-active',
+          !sidebarOpen && 'lg:justify-center lg:px-0'
+        )}
+        onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        {sidebarOpen && (
+          <span className="truncate">{t(item.key as any)}</span>
+        )}
+      </NavLink>
+    );
+  };
 
   return (
     <>
@@ -64,28 +96,22 @@ export const Sidebar: React.FC = () => {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path || 
-                (item.path !== '/' && location.pathname.startsWith(item.path));
-              
-              return (
-                <NavLink
-                  key={item.key}
-                  to={item.path}
-                  className={cn(
-                    'nav-item',
-                    isActive && 'nav-item-active',
-                    !sidebarOpen && 'lg:justify-center lg:px-0'
-                  )}
-                  onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                >
-                  <item.icon className="h-5 w-5 shrink-0" />
-                  {sidebarOpen && (
-                    <span className="truncate">{t(item.key as any)}</span>
-                  )}
-                </NavLink>
-              );
-            })}
+            {merchantNavItems.map(renderNavItem)}
+            
+            {isAdmin && (
+              <>
+                <div className={cn(
+                  'my-3 border-t border-sidebar-border',
+                  !sidebarOpen && 'mx-2'
+                )} />
+                {sidebarOpen && (
+                  <p className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    Admin
+                  </p>
+                )}
+                {adminNavItems.map(renderNavItem)}
+              </>
+            )}
           </nav>
 
           {/* Toggle button - desktop only */}
@@ -100,7 +126,7 @@ export const Sidebar: React.FC = () => {
               {sidebarOpen ? (
                 <>
                   <ChevronLeft className="h-5 w-5" />
-                  <span>Colapsar</span>
+                  <span>{t('collapse')}</span>
                 </>
               ) : (
                 <ChevronRight className="h-5 w-5" />

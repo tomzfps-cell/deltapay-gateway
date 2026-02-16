@@ -27,8 +27,8 @@ const currencies: { value: Currency; label: string }[] = [
 ];
 
 export const Header: React.FC = () => {
-  const { locale, currency, setLocale, setCurrency, setSidebarOpen, sidebarOpen } = useApp();
-  const { merchant, signOut } = useAuth();
+  const { locale, currency, setLocale, setCurrency, setSidebarOpen, sidebarOpen, t } = useApp();
+  const { merchant, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
 
   const currentLang = languages.find((l) => l.value === locale);
@@ -125,21 +125,23 @@ export const Header: React.FC = () => {
                 <span className="text-sm font-medium truncate max-w-[120px]">
                   {merchant?.business_name || 'Mi Negocio'}
                 </span>
-                <span className="text-xs text-muted-foreground">Merchant</span>
+                <span className="text-xs text-muted-foreground">
+                  {isAdmin ? t('adminRole') : t('merchantRole')}
+                </span>
               </div>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="glass-strong w-48">
             <DropdownMenuItem onClick={() => navigate('/settings')}>
-              Perfil
+              {t('profileLabel')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/settings')}>
-              Configuración
+              {t('configLabel')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
-              Cerrar Sesión
+              {t('closeSession')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

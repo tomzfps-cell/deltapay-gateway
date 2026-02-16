@@ -7,6 +7,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AdminRoute } from "@/components/auth/AdminRoute";
 
 // Auth Pages
 import Login from "./pages/Login";
@@ -22,12 +23,15 @@ import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
+// Admin Pages
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrders from "./pages/AdminOrders";
+
 // Public Pages
 import Checkout from "./pages/checkout/Checkout";
 import EcommerceCheckout from "./pages/checkout/EcommerceCheckout";
 import OrderThanks from "./pages/checkout/OrderThanks";
 import ProductLanding from "./pages/checkout/ProductLanding";
-import AdminOrders from "./pages/AdminOrders";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +55,6 @@ const App = () => (
               <Route path="/p/:productSlug" element={<ProductLanding />} />
               <Route path="/checkout/:orderId" element={<EcommerceCheckout />} />
               <Route path="/order/:orderId/thanks" element={<OrderThanks />} />
-              <Route path="/admin" element={<AdminOrders />} />
 
               {/* Protected dashboard routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -69,6 +72,10 @@ const App = () => (
                 <Route path="/webhooks" element={<Webhooks />} />
                 <Route path="/api-keys" element={<ApiKeys />} />
                 <Route path="/settings" element={<Settings />} />
+
+                {/* Admin routes (inside dashboard layout, protected by AdminRoute) */}
+                <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
               </Route>
 
               {/* 404 */}

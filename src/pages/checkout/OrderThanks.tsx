@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/i18n';
 import { 
-  Loader2, CheckCircle2, Package, Mail, Phone, MapPin, 
-  Building2, ArrowLeft, Truck, CreditCard
+  Loader2, CheckCircle2, Package, Mail, 
+  Building2, CreditCard, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,13 +26,29 @@ interface OrderData {
   shipping_postal_code: string;
   merchant_name: string;
   created_at: string;
+  redirect_url?: string | null;
 }
+
+/**
+ * Validates that a redirect URL is safe (HTTPS only, no open-redirect).
+ * Only allows the exact URL stored in the product's redirect_url.
+ */
+const isValidRedirectUrl = (url: string | null | undefined): url is string => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 export const OrderThanks: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<OrderData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
 
   const loadOrder = useCallback(async (id: string) => {
     try {
@@ -66,6 +82,27 @@ export const OrderThanks: React.FC = () => {
     }
   }, [orderId, loadOrder]);
 
+  // Auto-redirect countdown when paid and redirect_url is valid
+  const isPaid = order?.status === 'paid';
+  const hasValidRedirect = isPaid && isValidRedirectUrl(order?.redirect_url);
+
+  useEffect(() => {
+    if (!hasValidRedirect) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          window.location.href = order!.redirect_url!;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [hasValidRedirect, order]);
+
   if (loading) {
     return (
       <div className="checkout-light min-h-screen flex items-center justify-center">
@@ -88,8 +125,6 @@ export const OrderThanks: React.FC = () => {
       </div>
     );
   }
-
-  const isPaid = order.status === 'paid';
 
   return (
     <div className="checkout-light min-h-screen">
@@ -114,6 +149,11 @@ export const OrderThanks: React.FC = () => {
               <p className="text-muted-foreground">
                 Tu pedido fue confirmado y está siendo procesado.
               </p>
+              {hasValidRedirect && (
+                <p className="text-sm text-muted-foreground mt-3">
+                  Serás redirigido en {countdown} segundos...
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -126,11 +166,11 @@ export const OrderThanks: React.FC = () => {
           )}
         </div>
 
-        {/* Order details */}
+        {/* Order summary (simplified for success) */}
         <div className="glass rounded-xl p-6 space-y-4">
           <h3 className="font-semibold flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
-            Detalles del pedido
+            Resumen del pedido
           </h3>
           
           <div className="space-y-3">
@@ -143,64 +183,25 @@ export const OrderThanks: React.FC = () => {
               <span className="font-medium">{order.product_name}</span>
             </div>
             <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatCurrency(order.product_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Envío</span>
-              <span>
-                {order.shipping_cost > 0 
-                  ? formatCurrency(order.shipping_cost, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')
-                  : 'Gratis'
-                }
+              <span className="text-muted-foreground">Estado</span>
+              <span className={isPaid ? 'font-medium text-emerald-600' : 'font-medium text-amber-600'}>
+                {isPaid ? 'Pagado' : 'Pendiente'}
               </span>
             </div>
+            {order.customer_email && (
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Mail className="h-4 w-4" /> Email
+                </span>
+                <span>{order.customer_email}</span>
+              </div>
+            )}
             <div className="flex justify-between py-2">
               <span className="font-semibold">Total</span>
               <span className="stat-value text-xl">
                 {formatCurrency(order.total_amount, order.product_currency as 'ARS' | 'BRL' | 'USD', 'es')}
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* Shipping info */}
-        <div className="glass rounded-xl p-6 space-y-4">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Truck className="h-5 w-5 text-primary" />
-            Dirección de envío
-          </h3>
-          
-          <div className="flex items-start gap-3">
-            <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium">{order.shipping_name} {order.shipping_lastname}</p>
-              <p className="text-muted-foreground">
-                {order.shipping_address}<br />
-                {order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact info */}
-        <div className="glass rounded-xl p-6 space-y-4">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
-            Datos de contacto
-          </h3>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span>{order.customer_email}</span>
-            </div>
-            {order.customer_phone && (
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{order.customer_phone}</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -214,12 +215,20 @@ export const OrderThanks: React.FC = () => {
               </Button>
             </Link>
           )}
-          <Link to="/">
-            <Button variant="outline" className="w-full gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Volver al inicio
-            </Button>
-          </Link>
+          {hasValidRedirect ? (
+            <a href={order.redirect_url!}>
+              <Button className="w-full btn-primary-glow gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Continuar
+              </Button>
+            </a>
+          ) : isPaid ? (
+            <Link to={`/order/${orderId}/thanks`}>
+              <Button variant="outline" className="w-full gap-2">
+                Ver detalle del pedido
+              </Button>
+            </Link>
+          ) : null}
         </div>
 
         {/* Order date */}
