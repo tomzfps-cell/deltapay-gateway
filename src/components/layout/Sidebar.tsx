@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   ClipboardList,
   ArrowUpRight,
+  Paintbrush,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ const merchantNavItems = [
   { key: 'webhooks', path: '/webhooks', icon: Webhook },
   { key: 'apiKeys', path: '/api-keys', icon: Key },
   { key: 'settings', path: '/settings', icon: Settings },
+  { key: 'checkoutAppearance', path: '/checkout-appearance', icon: Paintbrush },
 ] as const;
 
 const adminNavItems = [

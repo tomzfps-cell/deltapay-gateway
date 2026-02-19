@@ -23,6 +23,7 @@ import Withdrawals from "./pages/Withdrawals";
 import Webhooks from "./pages/Webhooks";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
+import CheckoutAppearance from "./pages/CheckoutAppearance";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="/webhooks" element={<Webhooks />} />
                 <Route path="/api-keys" element={<ApiKeys />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/checkout-appearance" element={<CheckoutAppearance />} />
 
                 {/* Admin routes (inside dashboard layout, protected by AdminRoute) */}
                 <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
