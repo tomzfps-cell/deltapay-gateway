@@ -259,6 +259,74 @@ export type Database = {
           },
         ]
       }
+      merchant_checkout_themes: {
+        Row: {
+          background_color: string | null
+          benefits_json: Json | null
+          brand_name: string | null
+          button_radius: string | null
+          created_at: string
+          custom_css: string | null
+          font_family: string | null
+          id: string
+          layout_style: string | null
+          locale_default: string | null
+          logo_path: string | null
+          merchant_id: string
+          primary_color: string | null
+          secondary_color: string | null
+          text_color: string | null
+          trust_badges_json: Json | null
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string | null
+          benefits_json?: Json | null
+          brand_name?: string | null
+          button_radius?: string | null
+          created_at?: string
+          custom_css?: string | null
+          font_family?: string | null
+          id?: string
+          layout_style?: string | null
+          locale_default?: string | null
+          logo_path?: string | null
+          merchant_id: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          text_color?: string | null
+          trust_badges_json?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string | null
+          benefits_json?: Json | null
+          brand_name?: string | null
+          button_radius?: string | null
+          created_at?: string
+          custom_css?: string | null
+          font_family?: string | null
+          id?: string
+          layout_style?: string | null
+          locale_default?: string | null
+          logo_path?: string | null
+          merchant_id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          text_color?: string | null
+          trust_badges_json?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_checkout_themes_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: true
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_settings: {
         Row: {
           checkout_instructions: string | null
@@ -764,6 +832,53 @@ export type Database = {
           },
         ]
       }
+      product_checkout_overrides: {
+        Row: {
+          checkout_title: string | null
+          created_at: string
+          custom_benefits: Json | null
+          hero_image_path: string | null
+          hide_fields: Json | null
+          id: string
+          primary_color_override: string | null
+          product_id: string
+          trust_badges: Json | null
+          updated_at: string
+        }
+        Insert: {
+          checkout_title?: string | null
+          created_at?: string
+          custom_benefits?: Json | null
+          hero_image_path?: string | null
+          hide_fields?: Json | null
+          id?: string
+          primary_color_override?: string | null
+          product_id: string
+          trust_badges?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          checkout_title?: string | null
+          created_at?: string
+          custom_benefits?: Json | null
+          hero_image_path?: string | null
+          hide_fields?: Json | null
+          id?: string
+          primary_color_override?: string | null
+          product_id?: string
+          trust_badges?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_checkout_overrides_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string
@@ -1128,6 +1243,7 @@ export type Database = {
         Returns: Json
       }
       generate_payment_reference: { Args: never; Returns: string }
+      get_checkout_config: { Args: { _order_id: string }; Returns: Json }
       get_merchant_balance: {
         Args: { _merchant_id: string }
         Returns: {
