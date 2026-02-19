@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ShieldCheck,
   ClipboardList,
+  ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ const merchantNavItems = [
 const adminNavItems = [
   { key: 'adminDashboard', path: '/admin', icon: ShieldCheck },
   { key: 'adminOrders', path: '/admin/orders', icon: ClipboardList },
+  { key: 'adminWithdrawals', path: '/admin/withdrawals', icon: ArrowUpRight },
 ] as const;
 
 export const Sidebar: React.FC = () => {
