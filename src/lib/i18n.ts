@@ -14,6 +14,7 @@ export const translations = {
     settings: 'Configuración',
     adminOrders: 'Pedidos',
     adminDashboard: 'Admin',
+    adminWithdrawals: 'Retiros Admin',
     
     // Dashboard
     welcomeBack: 'Bienvenido de nuevo',
@@ -172,6 +173,7 @@ export const translations = {
     settings: 'Configurações',
     adminOrders: 'Pedidos',
     adminDashboard: 'Admin',
+    adminWithdrawals: 'Saques Admin',
     
     // Dashboard
     welcomeBack: 'Bem-vindo de volta',

@@ -12,6 +12,8 @@ import { AdminRoute } from "@/components/auth/AdminRoute";
 // Auth Pages
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Dashboard Pages
 import Dashboard from "./pages/Dashboard";
@@ -26,6 +28,7 @@ import NotFound from "./pages/NotFound";
 // Admin Pages
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminOrders from "./pages/AdminOrders";
+import AdminWithdrawals from "./pages/AdminWithdrawals";
 
 // Public Pages
 import Checkout from "./pages/checkout/Checkout";
@@ -47,6 +50,8 @@ const App = () => (
               {/* Public auth routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Public checkout routes - Legacy (Wallet Brick) */}
               <Route path="/pay/:paymentId" element={<Checkout />} />
@@ -76,6 +81,7 @@ const App = () => (
                 {/* Admin routes (inside dashboard layout, protected by AdminRoute) */}
                 <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                 <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+                <Route path="/admin/withdrawals" element={<AdminRoute><AdminWithdrawals /></AdminRoute>} />
               </Route>
 
               {/* 404 */}
