@@ -61,6 +61,59 @@ export type Database = {
           },
         ]
       }
+      checkout_templates: {
+        Row: {
+          assets: Json
+          content_blocks: Json
+          created_at: string
+          fields_config: Json
+          id: string
+          is_default: boolean
+          layout_style: string
+          locale: string
+          merchant_id: string
+          name: string
+          theme_tokens: Json
+          updated_at: string
+        }
+        Insert: {
+          assets?: Json
+          content_blocks?: Json
+          created_at?: string
+          fields_config?: Json
+          id?: string
+          is_default?: boolean
+          layout_style?: string
+          locale?: string
+          merchant_id: string
+          name?: string
+          theme_tokens?: Json
+          updated_at?: string
+        }
+        Update: {
+          assets?: Json
+          content_blocks?: Json
+          created_at?: string
+          fields_config?: Json
+          id?: string
+          is_default?: boolean
+          layout_style?: string
+          locale?: string
+          merchant_id?: string
+          name?: string
+          theme_tokens?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_templates_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crypto_trades: {
         Row: {
           created_at: string
@@ -881,6 +934,7 @@ export type Database = {
       }
       products: {
         Row: {
+          checkout_template_id: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           description: string | null
@@ -895,6 +949,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checkout_template_id?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
@@ -909,6 +964,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checkout_template_id?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
@@ -923,6 +979,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "products_checkout_template_id_fkey"
+            columns: ["checkout_template_id"]
+            isOneToOne: false
+            referencedRelation: "checkout_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_merchant_id_fkey"
             columns: ["merchant_id"]

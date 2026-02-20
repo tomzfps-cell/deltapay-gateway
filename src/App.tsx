@@ -24,6 +24,8 @@ import Webhooks from "./pages/Webhooks";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
 import CheckoutAppearance from "./pages/CheckoutAppearance";
+import CheckoutTemplates from "./pages/CheckoutTemplates";
+import CheckoutTemplateEditor from "./pages/CheckoutTemplateEditor";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
@@ -36,6 +38,7 @@ import Checkout from "./pages/checkout/Checkout";
 import EcommerceCheckout from "./pages/checkout/EcommerceCheckout";
 import OrderThanks from "./pages/checkout/OrderThanks";
 import ProductLanding from "./pages/checkout/ProductLanding";
+import CheckoutPreview from "./pages/checkout/CheckoutPreview";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +64,7 @@ const App = () => (
               <Route path="/p/:productSlug" element={<ProductLanding />} />
               <Route path="/checkout/:orderId" element={<EcommerceCheckout />} />
               <Route path="/order/:orderId/thanks" element={<OrderThanks />} />
+              <Route path="/checkout-preview" element={<CheckoutPreview />} />
 
               {/* Protected dashboard routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -79,6 +83,8 @@ const App = () => (
                 <Route path="/api-keys" element={<ApiKeys />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/checkout-appearance" element={<CheckoutAppearance />} />
+                <Route path="/checkout-templates" element={<CheckoutTemplates />} />
+                <Route path="/checkout-templates/:templateId" element={<CheckoutTemplateEditor />} />
 
                 {/* Admin routes (inside dashboard layout, protected by AdminRoute) */}
                 <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
