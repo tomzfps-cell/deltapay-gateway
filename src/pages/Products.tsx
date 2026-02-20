@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMerchantProducts } from '@/hooks/useMerchantData';
@@ -39,7 +39,7 @@ const productSchema = z.object({
   redirect_url: z.string().url('URL inválida').startsWith('https://', 'Debe usar HTTPS').optional().or(z.literal('')),
 });
 
-type ProductFormData = z.infer<typeof productSchema> & { image_url: string };
+type ProductFormData = z.infer<typeof productSchema> & { image_url: string; checkout_template_id: string };
 
 interface Product {
   id: string;
@@ -70,6 +70,7 @@ export const Products: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  const [checkoutTemplates, setCheckoutTemplates] = useState<{ id: string; name: string }[]>([]);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -78,11 +79,25 @@ export const Products: React.FC = () => {
     slug: '',
     redirect_url: '',
     image_url: '',
+    checkout_template_id: '',
   });
+
+  // Load checkout templates for dropdown
+  useEffect(() => {
+    if (!merchant?.id) return;
+    supabase
+      .from('checkout_templates')
+      .select('id, name')
+      .eq('merchant_id', merchant.id)
+      .order('is_default', { ascending: false })
+      .then(({ data }) => {
+        if (data) setCheckoutTemplates(data as any);
+      });
+  }, [merchant?.id]);
 
   const openCreateDialog = () => {
     setEditingProduct(null);
-    setFormData({ name: '', description: '', price: 0, currency: 'ARS', slug: '', redirect_url: '', image_url: '' });
+    setFormData({ name: '', description: '', price: 0, currency: 'ARS', slug: '', redirect_url: '', image_url: '', checkout_template_id: '' });
     setImagePreview(null);
     setErrors({});
     setIsDialogOpen(true);
@@ -98,6 +113,7 @@ export const Products: React.FC = () => {
       slug: product.slug || '',
       redirect_url: product.redirect_url || '',
       image_url: product.image_url || '',
+      checkout_template_id: (product as any).checkout_template_id || '',
     });
     setImagePreview(product.image_url || null);
     setErrors({});
@@ -187,7 +203,7 @@ export const Products: React.FC = () => {
     setIsSaving(true);
 
     try {
-      const productData = {
+      const productData: any = {
         merchant_id: merchant.id,
         name: formData.name,
         description: formData.description || null,
@@ -196,6 +212,7 @@ export const Products: React.FC = () => {
         slug: formData.slug,
         redirect_url: formData.redirect_url || null,
         image_url: formData.image_url || null,
+        checkout_template_id: formData.checkout_template_id || null,
       };
 
       if (editingProduct) {
@@ -493,6 +510,24 @@ export const Products: React.FC = () => {
                 </button>
               )}
               <p className="text-xs text-muted-foreground">{t('imageHint')}</p>
+            </div>
+
+            {/* Checkout Template selector */}
+            <div className="space-y-2">
+              <Label>Checkout Template</Label>
+              <Select
+                value={formData.checkout_template_id || '_default'}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, checkout_template_id: v === '_default' ? '' : v }))}
+              >
+                <SelectTrigger className="input-field"><SelectValue placeholder="Default del merchant" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_default">Default del merchant</SelectItem>
+                  {checkoutTemplates.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Plantilla de checkout que se usará para este producto</p>
             </div>
 
             <div className="space-y-2">

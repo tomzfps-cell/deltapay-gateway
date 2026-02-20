@@ -88,6 +88,7 @@ export function useCheckoutConfig(orderId: string | undefined) {
   const [config, setConfig] = useState<CheckoutConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [templateHideFields, setTemplateHideFields] = useState<string[]>([]);
 
   const loadConfig = useCallback(async (id: string) => {
     try {
@@ -112,6 +113,9 @@ export function useCheckoutConfig(orderId: string | undefined) {
         return;
       }
 
+      // hide_fields now comes from the template via RPC
+      const rpcHideFields = (result as any).hide_fields || [];
+
       setConfig({
         order: result.order,
         product: result.product!,
@@ -119,6 +123,9 @@ export function useCheckoutConfig(orderId: string | undefined) {
         overrides: result.overrides || null,
         payment: result.payment || null,
       });
+
+      // Store hide_fields from template
+      setTemplateHideFields(rpcHideFields);
     } catch (err: any) {
       console.error('Error loading checkout config:', err);
       setError('Error al cargar la configuración del checkout');
@@ -160,7 +167,9 @@ export function useCheckoutConfig(orderId: string | undefined) {
 
   const checkoutTitle = config?.overrides?.checkout_title || config?.product.name || '';
 
-  const hiddenFields = config?.overrides?.hide_fields || [];
+  const hiddenFields = templateHideFields.length > 0
+    ? templateHideFields
+    : (config?.overrides?.hide_fields || []);
 
   return {
     config,

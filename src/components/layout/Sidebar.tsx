@@ -27,7 +27,7 @@ const merchantNavItems = [
   { key: 'webhooks', path: '/webhooks', icon: Webhook },
   { key: 'apiKeys', path: '/api-keys', icon: Key },
   { key: 'settings', path: '/settings', icon: Settings },
-  { key: 'checkoutAppearance', path: '/checkout-appearance', icon: Paintbrush },
+  { key: 'checkoutTemplates', path: '/checkout-templates', icon: Paintbrush },
 ] as const;
 
 const adminNavItems = [
