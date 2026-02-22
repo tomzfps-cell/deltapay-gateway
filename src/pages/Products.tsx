@@ -361,7 +361,7 @@ export const Products: React.FC = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="glass-strong sm:max-w-lg flex flex-col max-h-[85vh] p-0 gap-0">
+        <DialogContent className="glass-strong sm:max-w-lg flex flex-col max-h-[85vh] p-0 gap-0 overflow-hidden">
           {/* Sticky header */}
           <div className="sticky top-0 z-10 border-b border-border/50 bg-background/95 backdrop-blur px-6 py-4">
             <DialogHeader>
