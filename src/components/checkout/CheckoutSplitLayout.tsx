@@ -60,7 +60,7 @@ export const CheckoutSplitLayout: React.FC<CheckoutSplitLayoutProps> = ({
   const currencyTyped = currency as 'ARS' | 'BRL' | 'USD';
 
   return (
-    <div className="min-h-screen" style={cssVars}>
+    <div className="min-h-screen checkout-light" style={cssVars}>
       <div className="max-w-6xl mx-auto p-4 py-8">
         {/* Header with logo */}
         <div className="text-center mb-8">

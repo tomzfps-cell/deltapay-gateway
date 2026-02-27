@@ -509,19 +509,25 @@ export const EcommerceCheckout: React.FC = () => {
             <form id="form-checkout" className="space-y-4 checkout-form-light">
               <div className="space-y-2">
                 <Label>Número de tarjeta</Label>
-                <input id="form-checkout__cardNumber" name="cardNumber" type="text" inputMode="numeric"
-                  placeholder="Número de tarjeta" autoComplete="cc-number" className="mp-input-native-light" />
+                <div className="mp-field-wrapper">
+                  <input id="form-checkout__cardNumber" name="cardNumber" type="text" inputMode="numeric"
+                    placeholder="Número de tarjeta" autoComplete="cc-number" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Vencimiento</Label>
-                  <input id="form-checkout__expirationDate" name="expirationDate" type="text" inputMode="numeric"
-                    placeholder="MM/YY" autoComplete="cc-exp" className="mp-input-native-light" />
+                  <div className="mp-field-wrapper">
+                    <input id="form-checkout__expirationDate" name="expirationDate" type="text" inputMode="numeric"
+                      placeholder="MM/YY" autoComplete="cc-exp" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>CVV</Label>
-                  <input id="form-checkout__securityCode" name="securityCode" type="text" inputMode="numeric"
-                    placeholder="CVV" autoComplete="cc-csc" className="mp-input-native-light" />
+                  <div className="mp-field-wrapper">
+                    <input id="form-checkout__securityCode" name="securityCode" type="text" inputMode="numeric"
+                      placeholder="CVV" autoComplete="cc-csc" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
