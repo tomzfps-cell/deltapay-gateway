@@ -134,7 +134,7 @@ export const CheckoutPreview: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-12 w-12 animate-spin dp-spinner" />
       </div>
     );
   }
@@ -181,11 +181,11 @@ export const CheckoutPreview: React.FC = () => {
           <div className="space-y-3">
             <div className="space-y-2">
               <Label>Email *</Label>
-              <Input placeholder="tu@email.com" className="bg-white border-gray-300" disabled />
+              <Input placeholder="tu@email.com" className="dp-input bg-white border-gray-300" disabled />
             </div>
             <div className="space-y-2">
               <Label>Teléfono *</Label>
-              <Input placeholder="+54 9 11 1234-5678" className="bg-white border-gray-300" disabled />
+              <Input placeholder="+54 9 11 1234-5678" className="dp-input bg-white border-gray-300" disabled />
             </div>
           </div>
           <ThemedButton primaryColor={theme.primary_color} buttonRadius={theme.button_radius} className="w-full" disabled>

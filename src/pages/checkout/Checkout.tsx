@@ -307,7 +307,7 @@ export const Checkout: React.FC = () => {
                   placeholder="tu@email.com"
                   value={customerForm.email}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, email: e.target.value }))}
-                  className="input-field"
+                  className="dp-input input-field"
                 />
               </div>
 
@@ -318,7 +318,7 @@ export const Checkout: React.FC = () => {
                   placeholder="Tu nombre"
                   value={customerForm.name}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="input-field"
+                  className="dp-input input-field"
                 />
               </div>
 
@@ -330,7 +330,7 @@ export const Checkout: React.FC = () => {
                   placeholder="+54 9 11 1234-5678"
                   value={customerForm.phone}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                  className="input-field"
+                  className="dp-input input-field"
                 />
               </div>
 
@@ -341,7 +341,7 @@ export const Checkout: React.FC = () => {
               >
                 {creating ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin dp-spinner" />
                     Creando pago...
                   </>
                 ) : (
@@ -363,7 +363,7 @@ export const Checkout: React.FC = () => {
     return (
       <div className="checkout-light min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin dp-spinner mx-auto" />
           <p className="text-muted-foreground">Cargando pago...</p>
         </div>
       </div>
@@ -419,7 +419,7 @@ export const Checkout: React.FC = () => {
             <div className="space-y-3">
               {redirecting ? (
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin dp-spinner" />
                   <span>Redirigiendo...</span>
                 </div>
               ) : (
@@ -520,7 +520,7 @@ export const Checkout: React.FC = () => {
           <div className="min-h-[60px]">
             {loadingPreference || !mpInitialized ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="h-8 w-8 animate-spin dp-spinner" />
                 <span className="ml-3 text-muted-foreground">Cargando opciones de pago...</span>
               </div>
             ) : preferenceId ? (
