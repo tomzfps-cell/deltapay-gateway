@@ -107,7 +107,7 @@ export const OrderThanks: React.FC = () => {
     return (
       <div className="checkout-light min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin dp-spinner mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Cargando pedido...</p>
         </div>
       </div>

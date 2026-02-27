@@ -287,7 +287,7 @@ export const EcommerceCheckout: React.FC = () => {
     return (
       <div className="min-h-screen checkout-light flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin dp-spinner mx-auto" style={{ color: theme.primary_color }} />
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-gray-500">Cargando pedido...</p>
         </div>
       </div>
@@ -398,7 +398,7 @@ export const EcommerceCheckout: React.FC = () => {
               <Label htmlFor="email">Email *</Label>
               <Input id="email" type="email" placeholder="tu@email.com" value={contactForm.email}
                 onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
               />
             </div>
             {!hiddenFields.includes('phone') && (
@@ -406,7 +406,7 @@ export const EcommerceCheckout: React.FC = () => {
                 <Label htmlFor="phone">Teléfono *</Label>
                 <Input id="phone" type="tel" placeholder="+54 9 11 1234-5678" value={contactForm.phone}
                   onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                  className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             )}
@@ -431,14 +431,14 @@ export const EcommerceCheckout: React.FC = () => {
                 <Label htmlFor="name">Nombre *</Label>
                 <Input id="name" placeholder="Nombre" value={shippingForm.name}
                   onChange={(e) => setShippingForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastname">Apellido *</Label>
                 <Input id="lastname" placeholder="Apellido" value={shippingForm.lastname}
                   onChange={(e) => setShippingForm(prev => ({ ...prev, lastname: e.target.value }))}
-                  className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -446,7 +446,7 @@ export const EcommerceCheckout: React.FC = () => {
               <Label htmlFor="address">Dirección *</Label>
               <Input id="address" placeholder="Calle y número, piso, depto" value={shippingForm.address}
                 onChange={(e) => setShippingForm(prev => ({ ...prev, address: e.target.value }))}
-                className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -454,14 +454,14 @@ export const EcommerceCheckout: React.FC = () => {
                 <Label htmlFor="city">Ciudad *</Label>
                 <Input id="city" placeholder="Ciudad" value={shippingForm.city}
                   onChange={(e) => setShippingForm(prev => ({ ...prev, city: e.target.value }))}
-                  className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="province">Provincia *</Label>
                 <Input id="province" placeholder="Provincia" value={shippingForm.province}
                   onChange={(e) => setShippingForm(prev => ({ ...prev, province: e.target.value }))}
-                  className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -469,7 +469,7 @@ export const EcommerceCheckout: React.FC = () => {
               <Label htmlFor="postal_code">Código Postal *</Label>
               <Input id="postal_code" placeholder="CP" value={shippingForm.postal_code}
                 onChange={(e) => setShippingForm(prev => ({ ...prev, postal_code: e.target.value }))}
-                className="dp-input bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 w-32"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 w-32"
               />
             </div>
           </div>
@@ -501,7 +501,7 @@ export const EcommerceCheckout: React.FC = () => {
           <div className="relative">
             {!mpReady && (
               <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg pointer-events-none">
-                <Loader2 className="h-8 w-8 animate-spin dp-spinner" style={{ color: theme.primary_color }} />
+                <Loader2 className="h-8 w-8 animate-spin" style={{ color: theme.primary_color }} />
                 <span className="ml-3 text-gray-500">Cargando formulario de pago...</span>
               </div>
             )}
