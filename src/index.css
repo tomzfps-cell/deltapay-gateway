@@ -18,8 +18,8 @@
 .checkout-light #form-checkout input#form-checkout__identificationNumber:focus,
 .checkout-light #form-checkout input#form-checkout__cardholderEmail:focus {
   outline: none !important;
-  border-color: #06B6D4 !important;
-  box-shadow: 0 0 0 2px rgba(6,182,212,.15) !important;
+  border-color: var(--checkout-primary, #06B6D4) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent) !important;
 }
 
 .checkout-light #form-checkout input#form-checkout__cardholderName::placeholder,
@@ -36,7 +36,7 @@
   -webkit-text-fill-color: #111827 !important;
   -webkit-box-shadow: 0 0 0px 1000px #fff inset !important;
   background: #fff !important;
-  caret-color: #06B6D4 !important;
+  caret-color: var(--checkout-primary, #06B6D4) !important;
 }
 @tailwind base;
 @tailwind components;
@@ -430,8 +430,8 @@
   .checkout-light input:focus,
   .checkout-light select:focus,
   .checkout-light textarea:focus {
-    border-color: hsl(var(--primary)) !important;
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
+    border-color: var(--checkout-primary, hsl(var(--primary))) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, hsl(var(--primary))) 15%, transparent) !important;
     outline: none !important;
   }
 
@@ -525,8 +525,8 @@
   }
 
   .mp-input-wrapper-light:focus-within {
-    border-color: #06B6D4;
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.15);
+    border-color: var(--checkout-primary, #06B6D4);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent);
   }
 
   .mp-input-wrapper-light iframe {
@@ -546,7 +546,7 @@
     color: #111827 !important;
     background-color: #FFFFFF !important;
     border: none !important;
-    caret-color: #06B6D4 !important;
+    caret-color: var(--checkout-primary, #06B6D4) !important;
     color-scheme: light !important;
   }
 
@@ -571,8 +571,8 @@
   .checkout-light .checkout-form-light input:not([type="hidden"]):not(.mp-input):focus,
   .checkout-light .checkout-form-light select:focus,
   .checkout-light .checkout-form-light textarea:focus {
-    border-color: #06B6D4 !important;
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.15) !important;
+    border-color: var(--checkout-primary, #06B6D4) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent) !important;
     outline: none !important;
   }
 
@@ -597,7 +597,7 @@
     -webkit-text-fill-color: #111827 !important;
     -webkit-box-shadow: 0 0 0px 1000px #FFFFFF inset !important;
     background-color: #FFFFFF !important;
-    caret-color: #06B6D4 !important;
+    caret-color: var(--checkout-primary, #06B6D4) !important;
     color-scheme: light !important;
   }
 
@@ -624,8 +624,8 @@
 
   .mp-select-light:focus {
     outline: none;
-    border-color: #06B6D4 !important;
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.15) !important;
+    border-color: var(--checkout-primary, #06B6D4) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent) !important;
   }
 
   .mp-select-light option {
@@ -718,8 +718,8 @@
 
 .mp-input-native-light:focus {
   outline: none;
-  border-color: #06B6D4;
-  box-shadow: 0 0 0 2px rgba(6,182,212,.15);
+  border-color: var(--checkout-primary, #06B6D4);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent);
 }
 
 /* =========================================
@@ -767,8 +767,8 @@
 .checkout-light #form-checkout input#form-checkout__cardholderName:focus,
 .checkout-light #form-checkout input#form-checkout__identificationNumber:focus,
 .checkout-light #form-checkout input#form-checkout__cardholderEmail:focus {
-  border-color: #06b6d4 !important;
-  box-shadow: 0 0 0 2px rgba(6,182,212,.15) !important;
+  border-color: var(--checkout-primary, #06b6d4) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06b6d4) 15%, transparent) !important;
 }
 
 /* Autofill */
@@ -777,5 +777,5 @@
 .checkout-light #form-checkout input:-webkit-autofill:focus {
   -webkit-text-fill-color: #111827 !important;
   -webkit-box-shadow: 0 0 0px 1000px #fff inset !important;
-  caret-color: #06b6d4 !important;
+  caret-color: var(--checkout-primary, #06b6d4) !important;
 }
