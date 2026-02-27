@@ -728,13 +728,16 @@
   background: transparent !important;
   box-shadow: none !important;
   padding: 0 !important;
-  font-size: 0.875rem;
-  color: #111827;
+  font-size: 0.875rem !important;
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: var(--checkout-primary, #111827) !important;
   display: block;
 }
 
 .mp-field-wrapper input::placeholder {
-  color: #9ca3af;
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
 }
 
 /* =========================================
