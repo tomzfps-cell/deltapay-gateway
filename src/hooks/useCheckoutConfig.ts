@@ -143,33 +143,23 @@ export function useCheckoutConfig(orderId: string | undefined) {
     }
   }, [orderId, loadConfig]);
 
-  // Compute merged theme (theme + product overrides)
-  const mergedTheme: CheckoutTheme | null = config
-    ? {
-        ...config.theme,
-        primary_color: config.overrides?.primary_color_override || config.theme.primary_color,
-        benefits: config.overrides?.custom_benefits?.length
-          ? config.overrides.custom_benefits
-          : config.theme.benefits,
-        trust_badges: config.overrides?.trust_badges?.length
-          ? config.overrides.trust_badges
-          : config.theme.trust_badges,
-      }
-    : null;
+  // Theme is already fully resolved by the backend (resolve_checkout_theme)
+  // No frontend merge needed — single source of truth
+  const mergedTheme: CheckoutTheme | null = config?.theme || null;
 
   const logoUrl = config?.theme.logo_path
     ? supabase.storage.from('merchant-assets').getPublicUrl(config.theme.logo_path).data.publicUrl
     : null;
 
-  const heroImageUrl = config?.overrides?.hero_image_path
-    ? supabase.storage.from('merchant-assets').getPublicUrl(config.overrides.hero_image_path).data.publicUrl
+  const heroImageUrl = (config?.theme as any)?.hero_image_path
+    ? supabase.storage.from('merchant-assets').getPublicUrl((config.theme as any).hero_image_path).data.publicUrl
     : config?.product.image_url || null;
 
-  const checkoutTitle = config?.overrides?.checkout_title || config?.product.name || '';
+  const checkoutTitle = (config?.theme as any)?.checkout_title || config?.product.name || '';
 
   const hiddenFields = templateHideFields.length > 0
     ? templateHideFields
-    : (config?.overrides?.hide_fields || []);
+    : [];
 
   return {
     config,

@@ -1,88 +1,23 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/i18n';
-import { 
-  Loader2, ArrowRight, Building2, Package, ShieldCheck, 
-  Truck, CreditCard
+import {
+  Loader2, ArrowRight, Package, ShieldCheck,
+  Truck, CreditCard, CheckCircle2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
-
-interface ProductData {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  currency: string;
-  merchant_name: string;
-  image_url: string | null;
-}
+import { useProductLandingConfig } from '@/hooks/useProductLandingConfig';
+import { themeToCSS } from '@/hooks/useCheckoutConfig';
+import { ThemedButton } from '@/components/checkout/ThemedButton';
 
 export const ProductLanding: React.FC = () => {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(true);
+  const { config, theme, logoUrl, heroImageUrl, loading, error } = useProductLandingConfig(productSlug);
   const [creating, setCreating] = useState(false);
-  const [product, setProduct] = useState<ProductData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // Load product data
-  const loadProduct = useCallback(async (slug: string) => {
-    try {
-      const { data, error: queryError } = await supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          description,
-          price,
-          currency,
-          image_url,
-          merchant:merchants!products_merchant_id_fkey(business_name)
-        `)
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .single();
-
-      if (queryError) throw queryError;
-
-      if (!data) {
-        setError('Producto no encontrado');
-        return;
-      }
-
-      // Cast data to handle the join properly
-      const productData = data as any;
-
-      setProduct({
-        id: productData.id,
-        name: productData.name,
-        description: productData.description,
-        price: productData.price,
-        currency: productData.currency,
-        merchant_name: productData.merchant?.business_name || 'DeltaPay',
-        image_url: productData.image_url || null,
-      });
-    } catch (err) {
-      console.error('Error loading product:', err);
-      setError('Producto no encontrado');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (productSlug) {
-      loadProduct(productSlug);
-    } else {
-      setError('Producto no válido');
-      setLoading(false);
-    }
-  }, [productSlug, loadProduct]);
 
   const handleStartCheckout = async () => {
     setCreating(true);
@@ -109,7 +44,6 @@ export const ProductLanding: React.FC = () => {
         return;
       }
 
-      // Navigate to checkout
       navigate(`/checkout/${result.order_id}`);
     } catch (err: any) {
       console.error('Error creating order:', err);
@@ -121,118 +55,154 @@ export const ProductLanding: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="checkout-light min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground">Cargando producto...</p>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto" style={{ color: '#06B6D4' }} />
+          <p style={{ color: '#6b7280' }}>Cargando producto...</p>
         </div>
       </div>
     );
   }
 
-  if (error || !product) {
+  if (error || !config || !theme) {
     return (
-      <div className="checkout-light min-h-screen flex items-center justify-center p-4">
-        <div className="glass rounded-2xl p-8 text-center max-w-md">
-          <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#FAFAFA' }}>
+        <div className="rounded-2xl p-8 text-center max-w-md bg-white shadow-sm border border-gray-200">
+          <Package className="h-16 w-16 mx-auto mb-4" style={{ color: '#9ca3af' }} />
           <h1 className="text-xl font-semibold mb-2">Producto no encontrado</h1>
-          <p className="text-muted-foreground">{error || 'Este producto no existe o no está disponible'}</p>
+          <p style={{ color: '#6b7280' }}>{error || 'Este producto no existe o no está disponible'}</p>
         </div>
       </div>
     );
   }
+
+  const product = config.product;
+  const cssVars = themeToCSS(theme);
+  const currencyTyped = product.currency as 'ARS' | 'BRL' | 'USD';
+  const benefits = theme.benefits || [];
+  const trustBadges = theme.trust_badges || [];
 
   return (
-    <div className="checkout-light min-h-screen">
+    <div className="min-h-screen" style={cssVars}>
       <div className="max-w-4xl mx-auto p-4 py-8">
-        {/* Header */}
+        {/* Header — same pattern as CheckoutSplitLayout */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-3">
-            <Building2 className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="text-xl font-bold">{product.merchant_name}</h1>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={theme.brand_name}
+              className="h-10 mx-auto mb-3 object-contain"
+            />
+          ) : (
+            <div
+              className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3"
+              style={{ backgroundColor: `${theme.primary_color}15` }}
+            >
+              <Package className="h-6 w-6" style={{ color: theme.primary_color }} />
+            </div>
+          )}
+          <h1 className="text-xl font-bold">{theme.brand_name}</h1>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Product info */}
           <div className="space-y-6">
-            <div className="glass rounded-xl p-6 space-y-4">
-              {product.image_url ? (
-                <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                  <img 
-                    src={product.image_url} 
+            <div className="rounded-xl p-6 space-y-4 bg-white shadow-sm border" style={{ borderColor: '#e5e7eb' }}>
+              {heroImageUrl ? (
+                <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
+                  <img
+                    src={heroImageUrl}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
               ) : (
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                  <Package className="h-16 w-16 text-muted-foreground" />
+                <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Package className="h-16 w-16" style={{ color: '#9ca3af' }} />
                 </div>
               )}
-              
+
               <div>
                 <h2 className="text-2xl font-bold">{product.name}</h2>
                 {product.description && (
-                  <p className="text-muted-foreground mt-2">{product.description}</p>
+                  <p className="mt-2" style={{ color: '#6b7280' }}>{product.description}</p>
                 )}
               </div>
 
-              <div className="stat-value text-3xl">
-                {formatCurrency(product.price, product.currency as 'ARS' | 'BRL' | 'USD', 'es')}
+              <div className="text-3xl font-bold" style={{ color: theme.primary_color }}>
+                {formatCurrency(product.price, currencyTyped, 'es')}
               </div>
             </div>
 
+            {/* Benefits */}
+            {benefits.length > 0 && (
+              <div className="rounded-xl p-5 space-y-3 bg-white border" style={{ borderColor: '#e5e7eb' }}>
+                {benefits.map((b, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: theme.primary_color }} />
+                    <span>{b}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Trust badges */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="glass rounded-lg p-3 text-center">
-                <ShieldCheck className="h-6 w-6 text-primary mx-auto mb-1" />
-                <span className="text-xs text-muted-foreground">Pago seguro</span>
-              </div>
-              <div className="glass rounded-lg p-3 text-center">
-                <Truck className="h-6 w-6 text-primary mx-auto mb-1" />
-                <span className="text-xs text-muted-foreground">Envío a domicilio</span>
-              </div>
-              <div className="glass rounded-lg p-3 text-center">
-                <CreditCard className="h-6 w-6 text-primary mx-auto mb-1" />
-                <span className="text-xs text-muted-foreground">Todas las tarjetas</span>
-              </div>
+            <div className="grid grid-cols-3 gap-3">
+              {trustBadges.length > 0 ? (
+                trustBadges.slice(0, 3).map((badge, i) => (
+                  <div key={i} className="rounded-lg p-3 text-center bg-white border" style={{ borderColor: '#e5e7eb' }}>
+                    {i === 0 && <ShieldCheck className="h-5 w-5 mx-auto mb-1" style={{ color: theme.primary_color }} />}
+                    {i === 1 && <Truck className="h-5 w-5 mx-auto mb-1" style={{ color: theme.primary_color }} />}
+                    {i === 2 && <CreditCard className="h-5 w-5 mx-auto mb-1" style={{ color: theme.primary_color }} />}
+                    <span className="text-xs" style={{ color: '#6b7280' }}>{badge}</span>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="rounded-lg p-3 text-center bg-white border" style={{ borderColor: '#e5e7eb' }}>
+                    <ShieldCheck className="h-5 w-5 mx-auto mb-1" style={{ color: theme.primary_color }} />
+                    <span className="text-xs" style={{ color: '#6b7280' }}>Pago seguro</span>
+                  </div>
+                  <div className="rounded-lg p-3 text-center bg-white border" style={{ borderColor: '#e5e7eb' }}>
+                    <Truck className="h-5 w-5 mx-auto mb-1" style={{ color: theme.primary_color }} />
+                    <span className="text-xs" style={{ color: '#6b7280' }}>Envío a domicilio</span>
+                  </div>
+                  <div className="rounded-lg p-3 text-center bg-white border" style={{ borderColor: '#e5e7eb' }}>
+                    <CreditCard className="h-5 w-5 mx-auto mb-1" style={{ color: theme.primary_color }} />
+                    <span className="text-xs" style={{ color: '#6b7280' }}>Todas las tarjetas</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Checkout form */}
-          <div className="glass rounded-xl p-6 space-y-6">
+          {/* Checkout CTA */}
+          <div className="rounded-xl p-6 space-y-6 bg-white shadow-sm border h-fit" style={{ borderColor: '#e5e7eb' }}>
             <h3 className="text-lg font-semibold">Comenzar compra</h3>
 
             <div className="space-y-4">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm" style={{ color: '#6b7280' }}>
                 Completá tus datos de contacto y envío en el siguiente paso.
               </p>
 
-              <Button 
-                className="w-full btn-primary-glow gap-2 h-12 text-base"
+              <ThemedButton
+                primaryColor={theme.primary_color}
+                buttonRadius={theme.button_radius}
+                className="w-full h-12 text-base"
                 disabled={creating}
+                loading={creating}
                 onClick={handleStartCheckout}
               >
-                {creating ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Creando pedido...
-                  </>
-                ) : (
-                  <>
-                    Continuar al checkout
-                    <ArrowRight className="h-5 w-5" />
-                  </>
-                )}
-              </Button>
+                {creating ? 'Creando pedido...' : 'Continuar al checkout'}
+                {!creating && <ArrowRight className="h-5 w-5" />}
+              </ThemedButton>
             </div>
 
-            <div className="border-t border-border pt-4">
+            <div className="border-t pt-4" style={{ borderColor: '#e5e7eb' }}>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total a pagar</span>
-                <span className="font-semibold">
-                  {formatCurrency(product.price, product.currency as 'ARS' | 'BRL' | 'USD', 'es')}
+                <span style={{ color: '#6b7280' }}>Total a pagar</span>
+                <span className="font-semibold" style={{ color: theme.primary_color }}>
+                  {formatCurrency(product.price, currencyTyped, 'es')}
                 </span>
               </div>
             </div>

@@ -1316,6 +1316,10 @@ export type Database = {
         }[]
       }
       get_order_for_checkout: { Args: { _order_id: string }; Returns: Json }
+      get_product_landing_config: {
+        Args: { _product_slug: string }
+        Returns: Json
+      }
       get_public_payment_view: { Args: { _payment_id: string }; Returns: Json }
       has_role: {
         Args: {
@@ -1330,6 +1334,10 @@ export type Database = {
           _idempotency_key?: string
           _merchant_id: string
         }
+        Returns: Json
+      }
+      resolve_checkout_theme: {
+        Args: { p_merchant_id: string; p_product_id: string }
         Returns: Json
       }
       update_order_checkout_data: {
