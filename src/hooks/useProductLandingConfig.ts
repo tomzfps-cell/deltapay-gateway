@@ -24,6 +24,12 @@ export function useProductLandingConfig(slug: string | undefined) {
   const [config, setConfig] = useState<ProductLandingConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugMeta, setDebugMeta] = useState<{
+    templateId: string | null;
+    resolutionSource: string | null;
+    merchantId: string | null;
+    productId: string | null;
+  }>({ templateId: null, resolutionSource: null, merchantId: null, productId: null });
 
   const loadConfig = useCallback(async (productSlug: string) => {
     try {
@@ -36,10 +42,11 @@ export function useProductLandingConfig(slug: string | undefined) {
       const result = data as unknown as {
         success: boolean;
         product?: ProductLandingData;
-        merchant?: { name: string };
+        merchant?: { id: string; name: string };
         theme?: CheckoutTheme;
         hide_fields?: string[];
         template_id?: string | null;
+        resolution_source?: string | null;
         error?: string;
       };
 
@@ -68,6 +75,13 @@ export function useProductLandingConfig(slug: string | undefined) {
         hideFields: result.hide_fields || [],
         templateId: result.template_id || null,
       });
+
+      setDebugMeta({
+        templateId: result.template_id || null,
+        resolutionSource: result.resolution_source || null,
+        merchantId: result.merchant?.id || null,
+        productId: result.product?.id || null,
+      });
     } catch (err: any) {
       console.error('Error loading product landing config:', err);
       setError('Error al cargar el producto');
@@ -85,7 +99,6 @@ export function useProductLandingConfig(slug: string | undefined) {
     }
   }, [slug, loadConfig]);
 
-  // Derive URLs from theme
   const logoUrl = config?.theme.logo_path
     ? supabase.storage.from('merchant-assets').getPublicUrl(config.theme.logo_path).data.publicUrl
     : null;
@@ -99,6 +112,7 @@ export function useProductLandingConfig(slug: string | undefined) {
     theme: config?.theme || null,
     logoUrl,
     heroImageUrl,
+    debugMeta,
     loading,
     error,
   };

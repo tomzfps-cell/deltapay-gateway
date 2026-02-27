@@ -89,6 +89,12 @@ export function useCheckoutConfig(orderId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [templateHideFields, setTemplateHideFields] = useState<string[]>([]);
+  const [debugMeta, setDebugMeta] = useState<{
+    templateId: string | null;
+    resolutionSource: string | null;
+    merchantId: string | null;
+    productId: string | null;
+  }>({ templateId: null, resolutionSource: null, merchantId: null, productId: null });
 
   const loadConfig = useCallback(async (id: string) => {
     try {
@@ -105,6 +111,9 @@ export function useCheckoutConfig(orderId: string | undefined) {
         theme?: CheckoutTheme;
         overrides?: ProductOverrides | null;
         payment?: CheckoutPaymentData | null;
+        merchant?: { id: string; name: string };
+        template_id?: string | null;
+        resolution_source?: string | null;
         error?: string;
       };
 
@@ -113,7 +122,6 @@ export function useCheckoutConfig(orderId: string | undefined) {
         return;
       }
 
-      // hide_fields now comes from the template via RPC
       const rpcHideFields = (result as any).hide_fields || [];
 
       setConfig({
@@ -124,8 +132,14 @@ export function useCheckoutConfig(orderId: string | undefined) {
         payment: result.payment || null,
       });
 
-      // Store hide_fields from template
       setTemplateHideFields(rpcHideFields);
+
+      setDebugMeta({
+        templateId: result.template_id || null,
+        resolutionSource: result.resolution_source || null,
+        merchantId: result.merchant?.id || null,
+        productId: result.product?.id || null,
+      });
     } catch (err: any) {
       console.error('Error loading checkout config:', err);
       setError('Error al cargar la configuración del checkout');
@@ -170,6 +184,7 @@ export function useCheckoutConfig(orderId: string | undefined) {
     hiddenFields,
     loading,
     error,
+    debugMeta,
     reload: () => orderId && loadConfig(orderId),
   };
 }
