@@ -16,6 +16,7 @@ import { useCheckoutConfig, CheckoutTheme } from '@/hooks/useCheckoutConfig';
 import { CheckoutSplitLayout } from '@/components/checkout/CheckoutSplitLayout';
 import { StepIndicator, Step } from '@/components/checkout/StepIndicator';
 import { ThemedButton } from '@/components/checkout/ThemedButton';
+import { ThemeDebugBadge } from '@/components/checkout/ThemeDebugBadge';
 
 interface ContactForm {
   email: string;
@@ -51,6 +52,7 @@ export const EcommerceCheckout: React.FC = () => {
     hiddenFields,
     loading,
     error,
+    debugMeta,
   } = useCheckoutConfig(orderId);
 
   const [currentStep, setCurrentStep] = useState<Step>('contact');
@@ -356,6 +358,7 @@ export const EcommerceCheckout: React.FC = () => {
 
   // Main checkout with split layout
   return (
+    <>
     <CheckoutSplitLayout
       theme={theme}
       logoUrl={logoUrl}
@@ -584,6 +587,20 @@ export const EcommerceCheckout: React.FC = () => {
         </div>
       )}
     </CheckoutSplitLayout>
+    {theme && (
+      <ThemeDebugBadge info={{
+        view: 'checkout',
+        productId: debugMeta.productId || undefined,
+        merchantId: debugMeta.merchantId || undefined,
+        templateId: debugMeta.templateId,
+        resolutionSource: debugMeta.resolutionSource,
+        primaryColor: theme.primary_color,
+        brandName: theme.brand_name,
+        layoutStyle: theme.layout_style,
+        logoPath: theme.logo_path,
+      }} />
+    )}
+    </>
   );
 };
 

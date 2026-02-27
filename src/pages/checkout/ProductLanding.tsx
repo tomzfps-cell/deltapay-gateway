@@ -10,13 +10,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useProductLandingConfig } from '@/hooks/useProductLandingConfig';
 import { themeToCSS } from '@/hooks/useCheckoutConfig';
 import { ThemedButton } from '@/components/checkout/ThemedButton';
+import { ThemeDebugBadge } from '@/components/checkout/ThemeDebugBadge';
 
 export const ProductLanding: React.FC = () => {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { config, theme, logoUrl, heroImageUrl, loading, error } = useProductLandingConfig(productSlug);
+  const { config, theme, logoUrl, heroImageUrl, debugMeta, loading, error } = useProductLandingConfig(productSlug);
   const [creating, setCreating] = useState(false);
 
   const handleStartCheckout = async () => {
@@ -209,6 +210,18 @@ export const ProductLanding: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ThemeDebugBadge info={{
+        view: 'landing',
+        productId: debugMeta.productId || undefined,
+        merchantId: debugMeta.merchantId || undefined,
+        templateId: debugMeta.templateId,
+        resolutionSource: debugMeta.resolutionSource,
+        primaryColor: theme.primary_color,
+        brandName: theme.brand_name,
+        layoutStyle: theme.layout_style,
+        logoPath: theme.logo_path,
+      }} />
     </div>
   );
 };
