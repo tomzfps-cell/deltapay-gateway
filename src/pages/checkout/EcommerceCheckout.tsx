@@ -500,7 +500,7 @@ export const EcommerceCheckout: React.FC = () => {
 
           <div className="relative">
             {!mpReady && (
-              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg pointer-events-none">
                 <Loader2 className="h-8 w-8 animate-spin" style={{ color: theme.primary_color }} />
                 <span className="ml-3 text-gray-500">Cargando formulario de pago...</span>
               </div>
