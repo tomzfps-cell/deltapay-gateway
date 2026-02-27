@@ -18,7 +18,7 @@ const steps: { id: Step; label: string; icon: React.ElementType }[] = [
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({
   currentStep,
-  primaryColor = '#06B6D4',
+  primaryColor = '#111827',
 }) => {
   const currentIndex = steps.findIndex(s => s.id === currentStep);
 
