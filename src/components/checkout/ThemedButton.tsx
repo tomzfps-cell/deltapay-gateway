@@ -16,7 +16,7 @@ const radiusClasses = {
 };
 
 export const ThemedButton: React.FC<ThemedButtonProps> = ({
-  primaryColor = '#06B6D4',
+  primaryColor = '#111827',
   buttonRadius = 'md',
   loading = false,
   children,

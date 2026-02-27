@@ -1,3 +1,16 @@
+/* === GLOBAL: caret negro y focus ring themed en checkout === */
+.checkout-light input,
+.checkout-light textarea,
+.checkout-light select {
+  caret-color: #111827 !important;
+}
+
+.checkout-light input:focus,
+.checkout-light textarea:focus,
+.checkout-light select:focus {
+  outline: none !important;
+}
+
 /* --- OVERRIDE inputs nativos Mercado Pago en checkout light --- */
 .checkout-light #form-checkout input#form-checkout__cardholderName,
 .checkout-light #form-checkout input#form-checkout__identificationNumber,
@@ -11,6 +24,7 @@
   height: 40px;
   padding: 0 0.75rem;
   font-size: 1rem;
+  caret-color: #111827 !important;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -18,8 +32,8 @@
 .checkout-light #form-checkout input#form-checkout__identificationNumber:focus,
 .checkout-light #form-checkout input#form-checkout__cardholderEmail:focus {
   outline: none !important;
-  border-color: var(--checkout-primary, #06B6D4) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent) !important;
+  border-color: var(--checkout-primary, #111827) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #111827) 15%, transparent) !important;
 }
 
 .checkout-light #form-checkout input#form-checkout__cardholderName::placeholder,
@@ -36,7 +50,7 @@
   -webkit-text-fill-color: #111827 !important;
   -webkit-box-shadow: 0 0 0px 1000px #fff inset !important;
   background: #fff !important;
-  caret-color: var(--checkout-primary, #06B6D4) !important;
+  caret-color: #111827 !important;
 }
 @tailwind base;
 @tailwind components;
@@ -525,8 +539,8 @@
   }
 
   .mp-input-wrapper-light:focus-within {
-    border-color: var(--checkout-primary, #06B6D4);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent);
+    border-color: var(--checkout-primary, #111827);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #111827) 15%, transparent);
   }
 
   .mp-input-wrapper-light iframe {
@@ -546,7 +560,7 @@
     color: #111827 !important;
     background-color: #FFFFFF !important;
     border: none !important;
-    caret-color: var(--checkout-primary, #06B6D4) !important;
+    caret-color: #111827 !important;
     color-scheme: light !important;
   }
 
@@ -571,8 +585,8 @@
   .checkout-light .checkout-form-light input:not([type="hidden"]):not(.mp-input):focus,
   .checkout-light .checkout-form-light select:focus,
   .checkout-light .checkout-form-light textarea:focus {
-    border-color: var(--checkout-primary, #06B6D4) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #06B6D4) 15%, transparent) !important;
+    border-color: var(--checkout-primary, #111827) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, #111827) 15%, transparent) !important;
     outline: none !important;
   }
 
@@ -597,7 +611,7 @@
     -webkit-text-fill-color: #111827 !important;
     -webkit-box-shadow: 0 0 0px 1000px #FFFFFF inset !important;
     background-color: #FFFFFF !important;
-    caret-color: var(--checkout-primary, #06B6D4) !important;
+    caret-color: #111827 !important;
     color-scheme: light !important;
   }
 
@@ -684,8 +698,8 @@
 
 .mp-input-native-light:focus {
   outline: none;
-  border-color: var(--checkout-primary, #06B6D4);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #06B6D4) 25%, transparent);
+  border-color: var(--checkout-primary, #111827);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #111827) 25%, transparent);
 }
 
 .mp-input-native-light::placeholder {
@@ -713,8 +727,8 @@
 }
 
 .mp-field-wrapper:focus-within {
-  border-color: var(--checkout-primary, #06B6D4);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #06B6D4) 25%, transparent);
+  border-color: var(--checkout-primary, #111827);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #111827) 25%, transparent);
 }
 
 /* The input inside the wrapper should be borderless and fill the space */
@@ -731,7 +745,7 @@
   font-size: 0.875rem !important;
   color: #111827 !important;
   -webkit-text-fill-color: #111827 !important;
-  caret-color: var(--checkout-primary, #111827) !important;
+  caret-color: #111827 !important;
   display: block;
 }
 
@@ -772,8 +786,8 @@
 .checkout-light #form-checkout input#form-checkout__cardholderName:focus,
 .checkout-light #form-checkout input#form-checkout__identificationNumber:focus,
 .checkout-light #form-checkout input#form-checkout__cardholderEmail:focus {
-  border-color: var(--checkout-primary, #06b6d4) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #06b6d4) 25%, transparent) !important;
+  border-color: var(--checkout-primary, #111827) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #111827) 25%, transparent) !important;
 }
 
 /* Autofill */
@@ -782,7 +796,7 @@
 .checkout-light #form-checkout input:-webkit-autofill:focus {
   -webkit-text-fill-color: #111827 !important;
   -webkit-box-shadow: 0 0 0px 1000px #fff inset !important;
-  caret-color: var(--checkout-primary, #06b6d4) !important;
+  caret-color: #111827 !important;
 }
 
 /* Select light theme */
@@ -807,8 +821,8 @@
 
 .mp-select-light:focus {
   outline: none;
-  border-color: var(--checkout-primary, #06B6D4);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #06B6D4) 25%, transparent);
+  border-color: var(--checkout-primary, #111827);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #111827) 25%, transparent);
 }
 
 /* =========================================
@@ -836,8 +850,8 @@ input[id="form-checkout__securityCode"] {
 input[id="form-checkout__cardNumber"]:focus,
 input[id="form-checkout__expirationDate"]:focus,
 input[id="form-checkout__securityCode"]:focus {
-  border-color: var(--checkout-primary, #06b6d4) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #06b6d4) 25%, transparent) !important;
+  border-color: var(--checkout-primary, #111827) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--checkout-primary, #111827) 25%, transparent) !important;
 }
 
 input[id="form-checkout__cardNumber"]::placeholder,
