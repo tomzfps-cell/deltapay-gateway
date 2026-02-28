@@ -7,8 +7,13 @@
 
 .checkout-light input:focus,
 .checkout-light textarea:focus,
-.checkout-light select:focus {
+.checkout-light select:focus,
+.checkout-light input:focus-visible,
+.checkout-light textarea:focus-visible,
+.checkout-light select:focus-visible {
   outline: none !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent) !important;
 }
 
 /* --- OVERRIDE inputs nativos Mercado Pago en checkout light --- */
@@ -404,7 +409,7 @@
     background-color: hsl(var(--checkout-muted));
   }
 
-  /* Checkout light input styling */
+  /* Checkout light input styling - caret siempre negro en checkout */
   .checkout-light .input-field,
   .checkout-light input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
   .checkout-light select,
@@ -412,7 +417,7 @@
     color: hsl(var(--checkout-input-text)) !important;
     background-color: hsl(var(--checkout-card)) !important;
     border: 1px solid hsl(var(--checkout-border)) !important;
-    caret-color: hsl(var(--primary)) !important;
+    caret-color: #111827 !important;
     border-radius: 0.375rem !important;
     height: 40px !important;
     padding-left: 0.75rem !important;
@@ -441,11 +446,15 @@
   }
 
   .checkout-light .input-field:focus,
+  .checkout-light .input-field:focus-visible,
   .checkout-light input:focus,
+  .checkout-light input:focus-visible,
   .checkout-light select:focus,
-  .checkout-light textarea:focus {
-    border-color: var(--checkout-primary, hsl(var(--primary))) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--checkout-primary, hsl(var(--primary))) 15%, transparent) !important;
+  .checkout-light select:focus-visible,
+  .checkout-light textarea:focus,
+  .checkout-light textarea:focus-visible {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent) !important;
     outline: none !important;
   }
 
@@ -455,7 +464,7 @@
   .checkout-light input:-webkit-autofill:focus {
     -webkit-text-fill-color: hsl(var(--checkout-input-text)) !important;
     -webkit-box-shadow: 0 0 0px 1000px hsl(var(--checkout-card)) inset !important;
-    caret-color: hsl(var(--primary)) !important;
+    caret-color: #111827 !important;
   }
 
   /* Checkout light MP input wrapper */
@@ -562,6 +571,12 @@
     border: none !important;
     caret-color: #111827 !important;
     color-scheme: light !important;
+  }
+
+  /* Fuerza caret negro en todos los inputs del paso Pago (card form MP, iframe: false) */
+  .checkout-light #form-checkout input,
+  .checkout-light #form-checkout select {
+    caret-color: #111827 !important;
   }
 
   /* Inputs nativos del checkout (no Mercado Pago) */

@@ -152,6 +152,14 @@ export const EcommerceCheckout: React.FC = () => {
             identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Documento' },
             cardholderEmail: { id: 'form-checkout__cardholderEmail', placeholder: 'E-mail' },
           },
+          styles: {
+            input: {
+              color: '#111827',
+              '::placeholder': {
+                color: '#9CA3AF',
+              },
+            },
+          },
           callbacks: {
             onFormMounted: (err: any) => {
               if (!mounted) return;
@@ -287,7 +295,10 @@ export const EcommerceCheckout: React.FC = () => {
     return (
       <div className="min-h-screen checkout-light flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <Loader2
+            className="h-12 w-12 animate-spin mx-auto"
+            style={{ color: theme?.primary_color ?? '#6b7280' }}
+          />
           <p className="text-gray-500">Cargando pedido...</p>
         </div>
       </div>

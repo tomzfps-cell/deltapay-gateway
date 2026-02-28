@@ -363,7 +363,10 @@ export const Checkout: React.FC = () => {
     return (
       <div className="checkout-light min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <Loader2
+            className="h-12 w-12 animate-spin mx-auto"
+            style={{ color: 'hsl(var(--primary))' }}
+          />
           <p className="text-muted-foreground">Cargando pago...</p>
         </div>
       </div>
@@ -517,13 +520,18 @@ export const Checkout: React.FC = () => {
           </div>
 
           {/* Wallet Brick Container */}
-          <div className="min-h-[60px]">
-            {loadingPreference || !mpInitialized ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Cargando opciones de pago...</span>
-              </div>
-            ) : preferenceId ? (
+              <div className="min-h-[60px]">
+                {loadingPreference || !mpInitialized ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2
+                      className="h-8 w-8 animate-spin"
+                      style={{ color: 'hsl(var(--primary))' }}
+                    />
+                    <span className="ml-3 text-muted-foreground">
+                      Cargando opciones de pago...
+                    </span>
+                  </div>
+                ) : preferenceId ? (
               <div id="wallet_container" className="wallet-brick-container">
                 <Wallet 
                   initialization={{ preferenceId: preferenceId, redirectMode: 'self' }}

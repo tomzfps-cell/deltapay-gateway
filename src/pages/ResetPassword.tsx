@@ -109,7 +109,10 @@ export const ResetPassword: React.FC = () => {
         <div className="glass rounded-xl p-8">
           {state === 'loading' && (
             <div className="flex flex-col items-center gap-4 py-8">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <Loader2
+                className="h-10 w-10 animate-spin"
+                style={{ color: 'hsl(var(--primary))' }}
+              />
               <p className="text-muted-foreground">Verificando link de recuperación...</p>
             </div>
           )}

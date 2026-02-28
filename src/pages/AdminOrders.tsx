@@ -118,7 +118,10 @@ export const AdminOrders: React.FC = () => {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2
+            className="h-8 w-8 animate-spin"
+            style={{ color: 'hsl(var(--primary))' }}
+          />
         </div>
       ) : orders.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center">
