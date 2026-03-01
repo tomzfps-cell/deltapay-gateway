@@ -71,6 +71,8 @@ export const EcommerceCheckout: React.FC = () => {
     name: '', lastname: '', address: '', city: '', province: '', postal_code: '',
   });
 
+  const contactEmailRef = useRef<string>('');
+
   // Pre-fill forms when config loads
   useEffect(() => {
     if (!config) return;
@@ -87,6 +89,10 @@ export const EcommerceCheckout: React.FC = () => {
     }
     if (o.status === 'paid') setCurrentStep('confirmation');
   }, [config]);
+
+  useEffect(() => {
+    contactEmailRef.current = contactForm.email || '';
+  }, [contactForm.email]);
 
   const currentStepIndex = ['contact', 'shipping', 'payment', 'confirmation'].indexOf(currentStep);
 
@@ -169,10 +175,27 @@ export const EcommerceCheckout: React.FC = () => {
             onSubmit: async (event: any) => {
               event.preventDefault();
               if (!cardFormRef.current) return;
+
+              const emailInput = document.getElementById('form-checkout__cardholderEmail') as HTMLInputElement | null;
+              const emailValue = (emailInput?.value || contactEmailRef.current || '').trim();
+
+              if (!emailValue) {
+                setPaymentError('Ingresá un email válido para continuar.');
+                if (emailInput) {
+                  emailInput.focus();
+                }
+                return;
+              }
+
+              if (emailValue !== contactForm.email) {
+                setContactForm(prev => ({ ...prev, email: emailValue }));
+                contactEmailRef.current = emailValue;
+              }
+
               const data = cardFormRef.current?.getCardFormData?.();
               const token = data?.token;
               if (!token) { setPaymentError('MP no pudo generar el token.'); return; }
-              await handlePaymentWithToken(data);
+              await handlePaymentWithToken(data, emailValue);
             },
             onError: (err: any) => {
               const msg = err?.cause?.[0]?.message || err?.message || 'Error de Mercado Pago';
@@ -255,35 +278,112 @@ export const EcommerceCheckout: React.FC = () => {
     return messages[detail] || detail;
   };
 
-  const handlePaymentWithToken = async (cardFormData: any) => {
+  const handlePaymentWithToken = async (cardFormData: any, payerEmail: string) => {
     if (processing) return;
     setProcessing(true); setPaymentError(null);
     try {
-      const response = await supabase.functions.invoke('mp-pay', {
+      const { data, error } = await supabase.functions.invoke('mp-pay', {
         body: {
           order_id: orderId, token: cardFormData.token,
           payment_method_id: cardFormData.paymentMethodId,
           issuer_id: cardFormData.issuerId,
           installments: parseInt(cardFormData.installments) || 1,
           payer: {
-            email: contactForm.email,
+            email: payerEmail,
             identification: cardFormData.identificationType && cardFormData.identificationNumber
               ? { type: cardFormData.identificationType, number: cardFormData.identificationNumber }
               : undefined,
           },
         },
       });
-      if (response.error) throw response.error;
-      const result = response.data as { success: boolean; status?: string; status_detail?: string; error?: string };
-      if (result.success && result.status === 'approved') {
+
+      // Manejo de error de Edge Function (status no 2xx)
+      if (error) {
+        console.error('[mp-pay] Edge Function error:', {
+          name: error.name,
+          message: error.message,
+        });
+
+        let status: number | undefined;
+        let statusText: string | undefined;
+        let rawBody: string | undefined;
+        let parsedBody: any = null;
+
+        const ctx: any = (error as any).context;
+
+        if (ctx) {
+          try {
+            status = ctx.status;
+            statusText = ctx.statusText;
+            console.error('[mp-pay] HTTP error status:', { status, statusText });
+
+            if (typeof ctx.text === 'function') {
+              rawBody = await ctx.text();
+              console.error('[mp-pay] HTTP error body:', rawBody);
+              try {
+                parsedBody = JSON.parse(rawBody);
+              } catch {
+                parsedBody = null;
+              }
+            }
+          } catch (logErr) {
+            console.error('[mp-pay] Failed to read error context:', logErr);
+          }
+        }
+
+        const messageFromBody =
+          parsedBody?.message ||
+          parsedBody?.detail ||
+          parsedBody?.details ||
+          parsedBody?.error;
+
+        setPaymentError(
+          messageFromBody ||
+          error.message ||
+          'Error al procesar el pago con el proveedor.'
+        );
+        return;
+      }
+
+      const result = data as {
+        success?: boolean;
+        status?: string;
+        status_detail?: string;
+        error?: boolean;
+        code?: string;
+        message?: string;
+        details?: any;
+      };
+
+      if (result?.error) {
+        const detailText =
+          typeof result.details === 'string'
+            ? result.details
+            : (result.details?.message as string | undefined);
+
+        setPaymentError(
+          result.message ||
+          detailText ||
+          getPaymentErrorMessage(result.status_detail || '') ||
+          'Error al procesar el pago'
+        );
+        return;
+      }
+
+      if (result?.success && result.status === 'approved') {
         setCurrentStep('confirmation');
         toast({ title: '¡Pago aprobado!' });
-      } else if (result.success && (result.status === 'in_process' || result.status === 'pending')) {
+      } else if (result?.success && (result.status === 'in_process' || result.status === 'pending')) {
         toast({ title: 'Pago en proceso' });
       } else {
-        setPaymentError(getPaymentErrorMessage(result.status_detail || result.error || 'Error'));
+        setPaymentError(
+          getPaymentErrorMessage(
+            result?.status_detail || (result as any)?.error || 'Error'
+          )
+        );
       }
     } catch (err: any) {
+      console.error('[mp-pay] Unexpected error invoking Edge Function:', err);
       setPaymentError(err?.message || 'Error al procesar el pago');
     } finally { setProcessing(false); }
   };
